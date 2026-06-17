@@ -210,29 +210,29 @@ if consulta:
 
     if not resultados.empty:
 
-    for _, fila in resultados.iterrows():
+        for _, fila in resultados.iterrows():
 
-        stock = int(fila["Cantidad stock valorado"])
+            stock = int(fila["Cantidad stock valorado"])
 
-        with st.container(border=True):
+            with st.container(border=True):
 
-            st.markdown(
-                f"### 🔩 {fila['Texto breve de material']}"
-            )
+                st.markdown(
+                    f"### 🔩 {fila['Texto breve de material']}"
+                )
 
-            col1, col2, col3 = st.columns(3)
+                col1, col2, col3 = st.columns(3)
 
-            with col1:
-                st.write("**Código**")
-                st.write(fila["Material"])
+                with col1:
+                    st.write("**Código**")
+                    st.write(fila["Material"])
 
-            with col2:
-                st.write("**Ubicación**")
-                st.write(fila["Ubic."])
+                with col2:
+                    st.write("**Ubicación**")
+                    st.write(fila["Ubic."])
 
-            with col3:
-                st.write("**Stock**")
-                st.write(f"{stock} {fila['UMB']}")
+                with col3:
+                    st.write("**Stock**")
+                    st.write(f"{stock} {fila['UMB']}")
 
 else:
 
