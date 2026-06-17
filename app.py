@@ -5,7 +5,7 @@ from rapidfuzz import fuzz
 # Configuración visual de la aplicación
 st.set_page_config(page_title="Consulta de Inventario Pro", page_icon="📦", layout="centered")
 
-st.markdown("<h1 style='text-align: center;'>📦 Consulta de Inventario Pro</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>📦 Consulta de Inventario :) </h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Búsqueda avanzada multi-criterio (Material, Medida, Código)</p>", unsafe_allow_html=True)
 st.divider()
 
