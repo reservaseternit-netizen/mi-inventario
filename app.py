@@ -105,6 +105,7 @@ def cargar_datos():
         st.error(f"Error cargando Excel: {e}")
         return None
 
+
 df = cargar_datos()
 
 if df is None:
@@ -126,7 +127,7 @@ with col2:
         pass
 
 # =====================================================
-# TITULOS
+# TÍTULOS
 # =====================================================
 
 st.markdown(
@@ -174,6 +175,7 @@ if consulta:
 
     consulta = consulta.lower().strip()
 
+    # Buscar por código exacto
     if consulta.isdigit():
 
         resultados = df[
@@ -200,13 +202,18 @@ if consulta:
             if score >= 60
         ]
 
-        resultados = df.loc[indices]
+        resultados = df.loc[indices].copy()
 
+    # Filtro de ubicación
     if filtro_ubicacion != "Todas":
 
         resultados = resultados[
             resultados["Ubic."] == filtro_ubicacion
         ]
+
+    # =================================================
+    # RESULTADOS
+    # =================================================
 
     if not resultados.empty:
 
@@ -234,11 +241,11 @@ if consulta:
                     st.write("**Stock**")
                     st.write(f"{stock} {fila['UMB']}")
 
-else:
+    else:
 
-    st.warning(
-        "No se encontraron resultados."
-    )
+        st.warning(
+            "No se encontraron resultados."
+        )
 
 else:
 
