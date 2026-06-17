@@ -6,38 +6,41 @@ from rapidfuzz import process, fuzz
 # CONFIGURACIÓN GENERAL
 # =====================================================
 st.set_page_config(
-    page_title="Consulta Inventario Repuestos",
+    page_title="Consulta Inventario Repuestos - Eternit",
     page_icon="📦",
     layout="wide"
 )
 
 # =====================================================
-# ESTILOS CSS (Mejorados)
+# ESTILOS CSS
 # =====================================================
 st.markdown("""
 <style>
-    .main { background-color: #f5f7fa; }
+    /* Estilo general */
+    .main { background-color: #ffffff; }
     .block-container { max-width: 900px; padding-top: 2rem; }
-    
-    /* Contenedor del Logo optimizado para nitidez y centrado */
+
+    /* Títulos y Subtítulos */
+    .titulo { text-align: center; color: #d71920; font-size: 32px; font-weight: 800; margin-bottom: 5px; }
+    .subtitulo { text-align: center; color: #666; font-size: 16px; margin-bottom: 20px; }
+
+    /* Contenedor del Logo Centrado */
     .logo-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-bottom: 20px;
-        width: 100%;
+        margin-bottom: 30px;
+        width: 100%; /* Ocupa todo el ancho */
     }
+    
+    /* Imagen del Logo con ancho máximo controlado y alta resolución */
     .logo-container img {
-        max-width: 280px; /* Tamaño ideal para que no se pixele ni se corte */
+        max-width: 400px; /* Tamaño máximo físico */
         height: auto;
-        object-fit: contain;
-        image-rendering: -webkit-optimize-contrast; /* Truco pro: evita pixelado en navegadores */
-        image-rendering: crisp-edges;
+        display: block; /* Asegura que el centrado flexbox funcione */
     }
 
-    .titulo { text-align: center; color: #d71920; font-size: 32px; font-weight: 800; margin-bottom: 5px; }
-    .subtitulo { text-align: center; color: #666; font-size: 16px; margin-bottom: 20px; }
-    
+    /* Estilos de Tarjetas de Resultado */
     .card {
         background: #ffffff;
         padding: 20px;
@@ -49,6 +52,28 @@ st.markdown("""
     .stock-alto { color: #28a745; font-weight: bold; }
     .stock-medio { color: #ff9800; font-weight: bold; }
     .stock-bajo { color: #dc3545; font-weight: bold; }
+    
+    /* Contenedor de Filtros */
+    .filtros-container {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: flex-end; /* Alinea los inputs en la base */
+    }
+    
+    /* Ajuste de etiquetas de filtro */
+    .stSelectbox label, .stTextInput label {
+        font-weight: 600;
+        color: #444;
+    }
+    
+    /* Ícono de búsqueda en el input */
+    .stTextInput div[data-baseweb="input"]::before {
+        content: "🔍 ";
+        padding-left: 10px;
+        color: #888;
+    }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,6 +90,9 @@ def cargar_datos():
         df["Ubic."] = df["Ubic."].fillna("No asignada").astype(str).str.strip()
         df["UMB"] = df["UMB"].fillna("UN").astype(str).str.strip()
         df["Cantidad stock valorado"] = pd.to_numeric(df["Cantidad stock valorado"], errors="coerce").fillna(0)
+        
+        # Columna de búsqueda en minúsculas para mayor eficiencia
+        df['search_col'] = df["Texto breve de material"].str.lower() + " " + df["Material"].str.lower()
         return df
     except Exception as e:
         st.error(f"Error cargando Excel: {e}")
@@ -73,31 +101,19 @@ def cargar_datos():
 df = cargar_datos()
 
 # =====================================================
-# INTERFAZ - LOGO CENTRADO Y ULTRA NÍTIDO (CORREGIDO)
+# INTERFAZ - LOGO CENTRADO (MEJORADO)
 # =====================================================
-# Usar HTML directo garantiza un centrado perfecto sin lidiar con los márgenes ocultos de st.columns
-import os
-if os.path.exists("logo.png"):
-    # Convertimos la imagen local a HTML (Opcional, si prefieres usar la ruta directa, pero la etiqueta asegura el estilo)
-    # Para asegurar la carga, simplemente inyectamos la imagen con la clase CSS optimizada.
-    st.markdown("""
-    <div class="logo-container">
-        <img src="app/static/logo.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tu-usuario/tu-repo/main/logo.png';">
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # NOTA TÉCNICA: Si Streamlit local no renderiza 'app/static/logo.png', usaremos el fallback estándar:
-    # st.image("logo.png", width=250) pero controlado por CSS externo. Para ir a lo seguro en Streamlit,
-    # reemplazamos temporalmente las columnas caóticas por una sola centrada limpia si el HTML falla:
-    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-    st.image("logo.png", width=260) # Bajamos a 260px; un logo estirado artificialmente es lo que causa pixelado.
-    st.markdown('</div>', unsafe_allow_html=True)
-else:
-    # Si lo anterior te da problemas de ruta, esta es la forma nativa de Streamlit más limpia y centrada sin columnas rotas:
-    _, col_centro, _ = st.columns([1.5, 2, 1.5])
-    with col_centro:
-        st.image("logo.png", width=280) # Ajustado a 280px para evitar el 'upscaling' pixelado.
+# Contenedor CSS para centrar y controlar el tamaño físico sin reescalar
+st.markdown('<div class="logo-container">', unsafe_allow_html=True)
+try:
+    # use_container_width=True carga la resolución completa
+    # El CSS limita el ancho máximo a 400px
+    st.image("logo.png", use_container_width=True)
+except:
+    st.error("No se pudo cargar 'logo.png'.")
+st.markdown('</div>', unsafe_allow_html=True)
 
+# Títulos
 st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitulo'>Búsqueda inteligente por código, descripción, medida y sinónimos</div>", unsafe_allow_html=True)
 st.divider()
@@ -108,32 +124,41 @@ if df is None:
 # =====================================================
 # FILTROS
 # =====================================================
+# Contenedor CSS para filtros
+st.markdown('<div class="filtros-container">', unsafe_allow_html=True)
+
+# Usamos la estructura de columnas original para la disposición
 col1, col2 = st.columns([4, 1])
 with col1:
-    consulta = st.text_input("🔍 Buscar por código, nombre, medida o descripción", placeholder="Ejemplo: 1170371, escoba, trapero...")
+    consulta = st.text_input("Buscar por código, nombre, medida o descripción", placeholder="Ejemplo: 1170371, escoba, trapero...")
 with col2:
     ubicaciones = ["Todas"] + sorted(df["Ubic."].unique().tolist())
     filtro_ubicacion = st.selectbox("Ubicación", ubicaciones)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================
 # LÓGICA DE BÚSQUEDA
 # =====================================================
 if consulta:
-    df['search_col'] = df["Texto breve de material"] + " " + df["Material"]
-    
-    resultados_data = process.extract(
-        consulta.lower(), 
-        df['search_col'].tolist(), 
-        scorer=fuzz.WRatio, 
-        limit=30
-    )
-    
-    indices = [df.index[i] for val, score, i in resultados_data if score > 60]
-    resultados = df.loc[indices]
+    # Filtrado previo por ubicación para mayor velocidad
+    df_filtrado = df if filtro_ubicacion == "Todas" else df[df["Ubic."] == filtro_ubicacion]
 
-    if filtro_ubicacion != "Todas":
-        resultados = resultados[resultados["Ubic."] == filtro_ubicacion]
+    if not df_filtrado.empty:
+        # Rapidfuzz sobre la serie directamente para usar índices reales
+        resultados_data = process.extract(
+            consulta.lower(), 
+            df_filtrado['search_col'], 
+            scorer=fuzz.WRatio, 
+            limit=30
+        )
+        
+        indices = [i for val, score, i in resultados_data if score > 60]
+        resultados = df_filtrado.loc[indices]
+    else:
+        resultados = pd.DataFrame()
 
+    # Mostrar resultados
     if not resultados.empty:
         st.success(f"Se encontraron {len(resultados)} resultado(s)")
         for _, fila in resultados.iterrows():
@@ -143,12 +168,4 @@ if consulta:
             st.markdown(f"""
             <div class="card">
                 <h4>{fila['Texto breve de material']}</h4>
-                <b>Código:</b> {fila['Material']}<br>
-                <b>Ubicación:</b> {fila['Ubic.']}<br>
-                <b>Stock:</b> <span class="{clase}">{stock:,.0f} {fila['UMB']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.error("No se encontraron resultados para tu búsqueda.")
-else:
-    st.info("Ingrese un código o descripción para comenzar a buscar.")
+                <b>Código:
