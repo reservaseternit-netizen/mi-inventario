@@ -12,14 +12,32 @@ st.set_page_config(
 )
 
 # =====================================================
-# ESTILOS CSS
+# ESTILOS CSS (Mejorados)
 # =====================================================
 st.markdown("""
 <style>
     .main { background-color: #f5f7fa; }
     .block-container { max-width: 900px; padding-top: 2rem; }
+    
+    /* Contenedor del Logo optimizado para nitidez y centrado */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+    .logo-container img {
+        max-width: 280px; /* Tamaño ideal para que no se pixele ni se corte */
+        height: auto;
+        object-fit: contain;
+        image-rendering: -webkit-optimize-contrast; /* Truco pro: evita pixelado en navegadores */
+        image-rendering: crisp-edges;
+    }
+
     .titulo { text-align: center; color: #d71920; font-size: 32px; font-weight: 800; margin-bottom: 5px; }
     .subtitulo { text-align: center; color: #666; font-size: 16px; margin-bottom: 20px; }
+    
     .card {
         background: #ffffff;
         padding: 20px;
@@ -55,18 +73,30 @@ def cargar_datos():
 df = cargar_datos()
 
 # =====================================================
-# INTERFAZ - LOGO CENTRADO (CORREGIDO)
+# INTERFAZ - LOGO CENTRADO Y ULTRA NÍTIDO (CORREGIDO)
 # =====================================================
-# Usamos una estructura de 3 columnas para que el logo ocupe el centro y no se corte
-col_l, col_c, col_r = st.columns([1, 2, 1])
-
-with col_c:
-    try:
-        # width=400 asegura que el logo tenga un tamaño físico fijo y legible.
-        # No uses 'use_column_width=True' si quieres evitar que se estire o corte.
-        st.image("logo.png", width=400)
-    except:
-        st.error("No se pudo cargar 'logo.png'. Verifica que esté en la carpeta.")
+# Usar HTML directo garantiza un centrado perfecto sin lidiar con los márgenes ocultos de st.columns
+import os
+if os.path.exists("logo.png"):
+    # Convertimos la imagen local a HTML (Opcional, si prefieres usar la ruta directa, pero la etiqueta asegura el estilo)
+    # Para asegurar la carga, simplemente inyectamos la imagen con la clase CSS optimizada.
+    st.markdown("""
+    <div class="logo-container">
+        <img src="app/static/logo.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/tu-usuario/tu-repo/main/logo.png';">
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # NOTA TÉCNICA: Si Streamlit local no renderiza 'app/static/logo.png', usaremos el fallback estándar:
+    # st.image("logo.png", width=250) pero controlado por CSS externo. Para ir a lo seguro en Streamlit,
+    # reemplazamos temporalmente las columnas caóticas por una sola centrada limpia si el HTML falla:
+    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
+    st.image("logo.png", width=260) # Bajamos a 260px; un logo estirado artificialmente es lo que causa pixelado.
+    st.markdown('</div>', unsafe_allow_html=True)
+else:
+    # Si lo anterior te da problemas de ruta, esta es la forma nativa de Streamlit más limpia y centrada sin columnas rotas:
+    _, col_centro, _ = st.columns([1.5, 2, 1.5])
+    with col_centro:
+        st.image("logo.png", width=280) # Ajustado a 280px para evitar el 'upscaling' pixelado.
 
 st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitulo'>Búsqueda inteligente por código, descripción, medida y sinónimos</div>", unsafe_allow_html=True)
