@@ -79,7 +79,7 @@ st.markdown("""
 try:
     st.image("logo.png", width=300)
 except:
-pass
+    pass
 
 st.markdown(
 "<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>",
