@@ -42,8 +42,6 @@ def cargar_datos():
     try:
         df = pd.read_excel("mi inventario.xlsx")
         df.columns = df.columns.astype(str).str.strip()
-        
-        # Normalización básica
         df["Material"] = df["Material"].astype(str).str.strip()
         df["Texto breve de material"] = df["Texto breve de material"].fillna("").astype(str).str.strip()
         df["Ubic."] = df["Ubic."].fillna("No asignada").astype(str).str.strip()
@@ -57,13 +55,13 @@ def cargar_datos():
 df = cargar_datos()
 
 # =====================================================
-# INTERFAZ PRINCIPAL
+# INTERFAZ Y LOGO
 # =====================================================
-# Logo Centrado
 col_l, col_c, col_r = st.columns([1, 2, 1])
 with col_c:
     try:
-        st.image("logo.png", use_container_width=True)
+        # Ajustamos el ancho para evitar estiramiento y pixelado excesivo
+        st.image("logo.png", width=400)
     except:
         st.write("Logo no encontrado")
 
@@ -88,10 +86,10 @@ with col2:
 # LÓGICA DE BÚSQUEDA
 # =====================================================
 if consulta:
-    # 1. Preparar búsqueda
+    # Combinar columnas para búsqueda integral
     df['search_col'] = df["Texto breve de material"] + " " + df["Material"]
     
-    # 2. Búsqueda inteligente con RapidFuzz
+    # Búsqueda difusa (Fuzzy Search)
     resultados_data = process.extract(
         consulta.lower(), 
         df['search_col'].tolist(), 
@@ -99,15 +97,13 @@ if consulta:
         limit=30
     )
     
-    # 3. Filtrar por score mínimo (60 es un buen equilibrio)
+    # Filtrar resultados por score > 60
     indices = [df.index[i] for val, score, i in resultados_data if score > 60]
     resultados = df.loc[indices]
 
-    # 4. Aplicar filtro de ubicación si es necesario
     if filtro_ubicacion != "Todas":
         resultados = resultados[resultados["Ubic."] == filtro_ubicacion]
 
-    # 5. Visualización
     if not resultados.empty:
         st.success(f"Se encontraron {len(resultados)} resultado(s)")
         for _, fila in resultados.iterrows():
