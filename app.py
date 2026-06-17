@@ -1,21 +1,88 @@
 import streamlit as st
 import pandas as pd
+from rapidfuzz import process
 
-st.set_page_config(page_title="Diagnóstico de Inventario", page_icon="📦")
-st.title("📦 Diagnóstico de Columnas")
+# Configuración visual de la aplicación
+st.set_page_config(page_title="Consulta de Inventario", page_icon="📦", layout="centered")
 
-try:
-    df = pd.read_excel("mi inventario.xlsx")
-    st.success("¡Archivo Excel cargado correctamente!")
-    
-    # Esto nos va a mostrar en la página de internet la lista real de tus columnas
-    st.subheader("📝 Las columnas reales de tu Excel son:")
-    st.write(list(df.columns))
-    
-    st.subheader("👀 Vista previa de las primeras filas:")
-    st.dataframe(df.head(3))
+st.markdown("<h1 style='text-align: center;'>📦 Consulta de Inventario</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>Busca códigos, descripciones o ubicaciones al instante</p>", unsafe_allow_html=True)
+st.divider()
 
-except FileNotFoundError:
-    st.error("No se encontró el archivo 'mi inventario.xlsx'")
-except Exception as e:
-    st.error(f"Ocurrió un error al leer el Excel: {e}")
+# Función optimizada para cargar la base de datos
+@st.cache_data
+def cargar_datos():
+    try:
+        df = pd.read_excel("mi inventario.xlsx")
+        # Limpiamos posibles espacios invisibles en los títulos de las columnas
+        df.columns = df.columns.astype(str).str.strip()
+        return df
+    except FileNotFoundError:
+        st.error("⚠️ No se encontró el archivo 'mi inventario.xlsx' en el repositorio.")
+        return None
+
+df = cargar_datos()
+
+if df is not None:
+    # Definición exacta de tus columnas reales
+    COL_CODIGO = "Material"
+    COL_DESCRIPCION = "Texto breve de material"
+    COL_UBICACION = "Ubic."
+    COL_UNIDAD = "UMB"
+    COL_STOCK = "Cantidad stock valorado"
+
+    # Caja de texto limpia para el usuario
+    consulta = st.text_input("🔍 Escriba el producto, descripción o código a buscar:", placeholder="Ej: trapero, de walt, 1170371...")
+
+    if consulta:
+        consulta_limpia = consulta.strip().lower()
+
+        # Palabras comunes a ignorar si el usuario escribe una frase larga
+        palabras_ignorar = ["hola", "me", "das", "por", "favor", "el", "la", "los", "las", "un", "una", "de", "del", "buscar", "codigo", "producto"]
+        palabras_clave = [p for p in consulta_limpia.split() if p not in palabras_ignorar]
+
+        # Si al limpiar no quedan palabras, usamos la búsqueda completa
+        if not palabras_clave:
+            palabras_clave = [consulta_limpia]
+
+        # Filtrado inteligente en la base de datos
+        mascara = pd.Series(False, index=df.index)
+        for palabra in palabras_clave:
+            coincide_cod = df[COL_CODIGO].astype(str).str.lower().str.contains(palabra, na=False)
+            coincide_desc = df[COL_DESCRIPCION].astype(str).str.lower().str.contains(palabra, na=False)
+            mascara = mascara | coincide_cod | coincide_desc
+
+        resultados = df[mascara]
+
+        # Mostrar resultados de forma estética
+        if not resultados.empty:
+            st.success(f"✅ Se encontraron {len(resultados)} coincidencia(s):")
+            
+            for _, fila in resultados.iterrows():
+                # Tarjeta limpia para cada producto
+                with st.container():
+                    st.markdown(f"### 🔹 {fila[COL_DESCRIPCION]}")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.markdown(f"**🔢 Código:** `{fila[COL_CODIGO]}`")
+                    with col2:
+                        # Si la ubicación está vacía (None / NaN) muestra un guión amigable
+                        ub = fila[COL_UBICACION] if pd.notna(fila[COL_UBICACION]) else "No asignada"
+                        st.markdown(f"**📍 Ubicación:** {ub}")
+                    with col3:
+                        stock_val = fila[COL_STOCK] if pd.notna(fila[COL_STOCK]) else 0
+                        unidad_val = fila[COL_UNIDAD] if pd.notna(fila[COL_UNIDAD]) else "UN"
+                        st.markdown(f"**📊 Stock:** {int(stock_val)} {unidad_val}")
+                    
+                    st.markdown("<div style='padding: 2px;'></div>", unsafe_allow_html=True)
+                    st.divider()
+        else:
+            st.error("❌ No se encontraron resultados exactos con esos términos.")
+            
+            # Sistema de sugerencia inteligente por si se escribe con errores de ortografía
+            lista_descripciones = df[COL_DESCRIPCION].astype(str).tolist()
+            sugerencia = process.extractOne(consulta, lista_descripciones)
+            
+            if sugerencia and sugerencia[1] > 45:
+                st.warning(f"💡 ¿Tal vez quisiste decir: **{sugerencia[0]}**?")
