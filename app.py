@@ -1,88 +1,94 @@
 import streamlit as st
 import pandas as pd
+from rapidfuzz import process
 
 # Configuración visual de la aplicación
-st.set_page_config(page_title="Consulta de Inventario", page_icon="📦", layout="wide")
+st.set_page_config(page_title="Consulta de Inventario", page_icon="📦", layout="centered")
 
-st.markdown("<h1 style='text-align: center;'>📦 Consulta de Inventario Avanzada</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Utiliza los filtros para encontrar exactamente lo que necesitas</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>📦 Consulta de Inventario</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>Busca códigos, descripciones o ubicaciones al instante</p>", unsafe_allow_html=True)
 st.divider()
 
-# Función para cargar la base de datos
+# Función optimizada para cargar la base de datos
 @st.cache_data
 def cargar_datos():
     try:
         df = pd.read_excel("mi inventario.xlsx")
+        # Limpiamos posibles espacios invisibles en los títulos de las columnas
         df.columns = df.columns.astype(str).str.strip()
         return df
     except FileNotFoundError:
-        st.error("⚠️ No se encontró el archivo 'mi inventario.xlsx'.")
+        st.error("⚠️ No se encontró el archivo 'mi inventario.xlsx' en el repositorio.")
         return None
 
 df = cargar_datos()
 
 if df is not None:
-    # Definición de tus columnas reales
+    # Definición exacta de tus columnas reales
     COL_CODIGO = "Material"
     COL_DESCRIPCION = "Texto breve de material"
     COL_UBICACION = "Ubic."
     COL_UNIDAD = "UMB"
     COL_STOCK = "Cantidad stock valorado"
 
-    # Convertir descripciones a texto para evitar errores
-    df[COL_DESCRIPCION] = df[COL_DESCRIPCION].astype(str)
+    # Caja de texto limpia para el usuario
+    consulta = st.text_input("🔍 Escriba el producto, descripción o código a buscar:", placeholder="Ej: trapero, de walt, 1170371...")
 
-    # --- SECCIÓN DE FILTROS EN LA BARRA LATERAL (SIDEBAR) ---
-    st.sidebar.header("🔍 Filtros de Búsqueda")
+    if consulta:
+        consulta_limpia = consulta.strip().lower()
 
-    # Filtro 1: Texto principal
-    buscar_base = st.sidebar.text_input("1. Producto Base:", placeholder="Ej: VALVULA, VIDRIO, ESMERIL").strip().upper()
+        # Palabras comunes a ignorar si el usuario escribe una frase conversacional
+        palabras_ignorar = ["hola", "me", "das", "por", "favor", "el", "la", "los", "las", "un", "una", "de", "del", "buscar", "codigo", "producto", "búscame", "buscame", "necesito", "stock"]
+        palabras_clave = [p for p in consulta_limpia.split() if p not in palabras_ignorar]
 
-    # Filtro 2: Medidas comunes (Búsqueda por texto en la descripción)
-    opciones_medida = ["Todas", "1/2", "1/4", "3/4", "1\"", "2\"", "3\"", "4\""]
-    buscar_medida = st.sidebar.selectbox("2. Medida / Diámetro:", opciones_medida)
+        if palabras_clave:
+            # FILTRADO CORREGIDO: Cada palabra clave ingresada DEBE existir como una palabra exacta o fragmento real
+            # Esto evita que "medio" ruede y encuentre "intermedio" de manera incorrecta.
+            mascara = pd.Series(True, index=df.index)
+            
+            for palabra in palabras_clave:
+                # Comprobamos si la palabra está en el código o en la descripción de forma más estricta
+                en_codigo = df[COL_CODIGO].astype(str).str.lower().str.contains(palabra, na=False)
+                en_descripcion = df[COL_DESCRIPCION].astype(str).str.lower().str.contains(r'\b' + palabra + r'\b', regex=True, na=False)
+                
+                # Si la palabra es muy corta o tiene caracteres especiales, usamos una búsqueda normal para no romper el sistema
+                if len(palabra) <= 3 or not palabra.isalnum():
+                    en_descripcion = df[COL_DESCRIPCION].astype(str).str.lower().str.contains(palabra, na=False)
+                
+                mascara = mascara & (en_codigo | en_descripcion)
 
-    # Filtro 3: Tipo o Diseño
-    opciones_tipo = ["Todos", "BOLA", "PASO RECTO", "PORTACABLE", "CABINA", "TRAB.PESADO"]
-    buscar_tipo = st.sidebar.selectbox("3. Tipo / Diseño:", opciones_tipo)
+            resultados = df[mascara]
+        else:
+            resultados = pd.DataFrame()
 
-    # Filtro 4: Operación o Marca
-    opciones_operacion = ["Todos", "MANUAL", "DE WALT", "BOBCAT", "NEW HOLLAND"]
-    buscar_operacion = st.sidebar.selectbox("4. Características / Marca:", opciones_operacion)
-
-    # --- LÓGICA DE FILTRADO ---
-    resultados = df.copy()
-
-    # Aplicar Filtro 1 (Producto Base)
-    if buscar_base:
-        resultados = resultados[resultados[COL_DESCRIPCION].str.upper().str.contains(buscar_base, na=False)]
-
-    # Aplicar Filtro 2 (Medida)
-    if buscar_medida != "Todas":
-        resultados = resultados[resultados[COL_DESCRIPCION].str.upper().str.contains(buscar_medida, na=False)]
-
-    # Aplicar Filtro 3 (Tipo)
-    if buscar_tipo != "Todos":
-        resultados = resultados[resultados[COL_DESCRIPCION].str.upper().str.contains(buscar_tipo, na=False)]
-
-    # Aplicar Filtro 4 (Operación / Marca)
-    if buscar_operacion != "Todos":
-        resultados = resultados[resultados[COL_DESCRIPCION].str.upper().str.contains(buscar_operacion, na=False)]
-
-    # --- MOSTRAR RESULTADOS ---
-    st.subheader(f"📊 Productos Encontrados ({len(resultados)})")
-
-    if not resultados.empty:
-        # Mostrar los resultados en una tabla interactiva muy estética
-        # Formateamos el stock para que no muestre decimales feos
-        resultados_visibles = resultados.copy()
-        resultados_visibles[COL_STOCK] = resultados_visibles[COL_STOCK].fillna(0).astype(int)
-        resultados_visibles[COL_UBICACION] = resultados_visibles[COL_UBICACION].fillna("No asignada")
-        
-        # Seleccionamos y reordenamos las columnas para el usuario
-        tabla_final = resultados_visibles[[COL_CODIGO, COL_DESCRIPCION, COL_UBICACION, COL_STOCK, COL_UNIDAD]]
-        
-        st.dataframe(tabla_final, use_container_width=True, hide_index=True)
-    else:
-        st.warning("⏳ No hay productos que coincidan con la combinación de filtros seleccionada.")
-        
+        # Mostrar resultados de forma estética
+        if not resultados.empty:
+            st.success(f"✅ Se encontraron {len(resultados)} coincidencia(s):")
+            
+            for _, fila in resultados.iterrows():
+                # Tarjeta limpia para cada producto
+                with st.container():
+                    st.markdown(f"### 🔹 {fila[COL_DESCRIPCION]}")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.markdown(f"**🔢 Código:** `{fila[COL_CODIGO]}`")
+                    with col2:
+                        ub = fila[COL_UBICACION] if pd.notna(fila[COL_UBICACION]) else "No asignada"
+                        st.markdown(f"**📍 Ubicación:** {ub}")
+                    with col3:
+                        stock_val = fila[COL_STOCK] if pd.notna(fila[COL_STOCK]) else 0
+                        unidad_val = fila[COL_UNIDAD] if pd.notna(fila[COL_UNIDAD]) else "UN"
+                        st.markdown(f"**📊 Stock:** {int(stock_val)} {unidad_val}")
+                    
+                    st.markdown("<div style='padding: 2px;'></div>", unsafe_allow_html=True)
+                    st.divider()
+        else:
+            st.error("❌ No se encontraron resultados exactos con esos términos.")
+            
+            # Sistema de sugerencia inteligente por si se escribe con errores de ortografía
+            lista_descripciones = df[COL_DESCRIPCION].astype(str).tolist()
+            sugerencia = process.extractOne(consulta, lista_descripciones)
+            
+            if sugerencia and sugerencia[1] > 55:
+                st.warning(f"💡 ¿Tal vez quisiste decir: **{sugerencia[0]}**?")
