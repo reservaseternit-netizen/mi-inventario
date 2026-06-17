@@ -5,6 +5,7 @@ from rapidfuzz import process, fuzz
 # =====================================================
 # CONFIGURACIÓN GENERAL
 # =====================================================
+
 st.set_page_config(
     page_title="Consulta Inventario Repuestos",
     page_icon="📦",
@@ -12,58 +13,49 @@ st.set_page_config(
 )
 
 # =====================================================
-# ESTILOS CSS
+# ESTILOS
 # =====================================================
+
 st.markdown("""
 <style>
 
-.main {
-    background-color: #f5f7fa;
+.block-container{
+    max-width:900px;
+    padding-top:2rem;
 }
 
-.block-container {
-    max-width: 1000px;
-    padding-top: 2rem;
+.titulo{
+    text-align:center;
+    color:#d71920;
+    font-size:34px;
+    font-weight:800;
+    margin-top:10px;
+    margin-bottom:5px;
 }
 
-.titulo {
-    text-align: center;
-    color: #d71920;
-    font-size: 36px;
-    font-weight: 800;
-    margin-top: 10px;
-    margin-bottom: 5px;
+.subtitulo{
+    text-align:center;
+    color:#666;
+    font-size:16px;
+    margin-bottom:20px;
 }
 
-.subtitulo {
-    text-align: center;
-    color: #666;
-    font-size: 17px;
-    margin-bottom: 20px;
+.resultado{
+    background:white;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:10px;
+    border-left:5px solid #d71920;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
-.card {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 12px;
-    border-left: 5px solid #d71920;
-    box-shadow: 0px 3px 8px rgba(0,0,0,0.08);
-    margin-bottom: 15px;
+.codigo{
+    color:#666;
 }
 
-.stock-alto {
-    color: #28a745;
-    font-weight: bold;
-}
-
-.stock-medio {
-    color: #ff9800;
-    font-weight: bold;
-}
-
-.stock-bajo {
-    color: #dc3545;
-    font-weight: bold;
+.stock{
+    color:#198754;
+    font-weight:bold;
 }
 
 </style>
@@ -72,6 +64,7 @@ st.markdown("""
 # =====================================================
 # CARGA DE DATOS
 # =====================================================
+
 @st.cache_data
 def cargar_datos():
 
@@ -117,7 +110,6 @@ def cargar_datos():
             .fillna(0)
         )
 
-        # Columna optimizada para búsquedas
         df["search_col"] = (
             df["Texto breve de material"]
             + " "
@@ -127,9 +119,9 @@ def cargar_datos():
         return df
 
     except Exception as e:
+
         st.error(f"Error cargando Excel: {e}")
         return None
-
 
 df = cargar_datos()
 
@@ -137,7 +129,7 @@ if df is None:
     st.stop()
 
 # =====================================================
-# LOGO CENTRADO
+# LOGO
 # =====================================================
 
 col1, col2, col3 = st.columns([1,5,1])
@@ -149,27 +141,19 @@ with col2:
             use_container_width=True
         )
     except:
-        st.warning("Logo no encontrado")
+        pass
 
 # =====================================================
 # TITULOS
 # =====================================================
 
 st.markdown(
-    """
-    <div class='titulo'>
-        Consulta de Inventario Almacén Repuestos
-    </div>
-    """,
+    "<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>",
     unsafe_allow_html=True
 )
 
 st.markdown(
-    """
-    <div class='subtitulo'>
-        Búsqueda inteligente por código, descripción, medida y sinónimos
-    </div>
-    """,
+    "<div class='subtitulo'>Busque por código, descripción o medida</div>",
     unsafe_allow_html=True
 )
 
@@ -184,7 +168,7 @@ col1, col2 = st.columns([4,1])
 with col1:
 
     consulta = st.text_input(
-        "🔍 Buscar por código, nombre, medida o descripción",
+        "🔍 Buscar",
         placeholder="Ej: Rodamiento 6205"
     )
 
@@ -208,10 +192,6 @@ if consulta:
 
     consulta = consulta.lower().strip()
 
-    # ------------------------------------------
-    # BÚSQUEDA DIRECTA POR CÓDIGO
-    # ------------------------------------------
-
     if consulta.isdigit():
 
         resultados = df[
@@ -232,73 +212,21 @@ if consulta:
             limit=30
         )
 
-        coincidencias = [
-            (df.index[i], score)
+        indices = [
+            df.index[i]
             for valor, score, i in resultados_data
             if score >= 60
         ]
 
-        if coincidencias:
+        resultados = df.loc[indices]
 
-            resultados = df.loc[
-                [x[0] for x in coincidencias]
-            ].copy()
+    if filtro_ubicacion != "Todas":
 
-            resultados["score"] = [
-                x[1] for x in coincidencias
-            ]
-
-        else:
-
-            resultados = pd.DataFrame()
-
-    # ------------------------------------------
-    # FILTRO UBICACIÓN
-    # ------------------------------------------
-
-    if (
-        filtro_ubicacion != "Todas"
-        and not resultados.empty
-    ):
         resultados = resultados[
             resultados["Ubic."] == filtro_ubicacion
         ]
 
-    # ------------------------------------------
-    # RESULTADOS
-    # ------------------------------------------
-
     if not resultados.empty:
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric(
-                "Resultados",
-                len(resultados)
-            )
-
-        with col2:
-            st.metric(
-                "Stock Total",
-                int(
-                    resultados[
-                        "Cantidad stock valorado"
-                    ].sum()
-                )
-            )
-
-        with col3:
-            st.metric(
-                "Ubicaciones",
-                resultados["Ubic."].nunique()
-            )
-
-        st.success(
-            f"Se encontraron {len(resultados)} resultado(s)"
-        )
-
-        st.divider()
 
         for _, fila in resultados.iterrows():
 
@@ -306,26 +234,27 @@ if consulta:
                 fila["Cantidad stock valorado"]
             )
 
-            if stock <= 5:
-                clase = "stock-bajo"
-            elif stock <= 15:
-                clase = "stock-medio"
-            else:
-                clase = "stock-alto"
-
             st.markdown(
                 f"""
-                <div class="card">
-                    <h4>{fila['Texto breve de material']}</h4>
+                <div class="resultado">
 
-                    <b>Código:</b> {fila['Material']}<br>
+                    <b>Descripción:</b><br>
+                    {fila['Texto breve de material']}
 
-                    <b>Ubicación:</b> {fila['Ubic.']}<br>
+                    <br><br>
+
+                    <b>Código:</b>
+                    <span class="codigo">
+                        {fila['Material']}
+                    </span>
+
+                    <br><br>
 
                     <b>Stock:</b>
-                    <span class="{clase}">
+                    <span class="stock">
                         {stock:,.0f} {fila['UMB']}
                     </span>
+
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -333,12 +262,12 @@ if consulta:
 
     else:
 
-        st.error(
-            "No se encontraron resultados para tu búsqueda."
+        st.warning(
+            "No se encontraron resultados."
         )
 
 else:
 
     st.info(
-        "Ingrese un código o descripción para comenzar a buscar."
+        "Ingrese un código o descripción para buscar."
     )
