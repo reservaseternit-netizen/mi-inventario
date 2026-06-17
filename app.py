@@ -77,7 +77,7 @@ st.markdown("""
 # =====================================================
 
 try:
-st.image("logo.png", width=300)
+    st.image("logo.png", width=300)
 except:
 pass
 
