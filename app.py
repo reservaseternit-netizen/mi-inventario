@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from rapidfuzz import process
+from rapidfuzz import process, fuzz
 
 # Configuración visual de la aplicación
 st.set_page_config(page_title="Consulta de Inventario", page_icon="📦", layout="centered")
@@ -39,25 +39,38 @@ if df is not None:
 
         # Palabras comunes a ignorar si el usuario escribe una frase conversacional
         palabras_ignorar = ["hola", "me", "das", "por", "favor", "el", "la", "los", "las", "un", "una", "de", "del", "buscar", "codigo", "producto", "búscame", "buscame", "necesito", "stock"]
-        palabras_clave = [p for p in consulta_limpia.split() if p not in palabras_ignorar]
+        palabras_clave = " ".join([p for p in consulta_limpia.split() if p not in palabras_ignorar])
 
         if palabras_clave:
-            # FILTRADO CORREGIDO: Cada palabra clave ingresada DEBE existir como una palabra exacta o fragmento real
-            # Esto evita que "medio" ruede y encuentre "intermedio" de manera incorrecta.
-            mascara = pd.Series(True, index=df.index)
+            # --- NUEVA LÓGICA DE BÚSQUEDA DIFUSA ---
+            # 1. Intentar búsqueda exacta primero por rendimiento
+            mascara_exacta = df[COL_DESCRIPCION].astype(str).str.lower().str.contains(palabras_clave, na=False) | \
+                             df[COL_CODIGO].astype(str).str.lower().str.contains(palabras_clave, na=False)
             
-            for palabra in palabras_clave:
-                # Comprobamos si la palabra está en el código o en la descripción de forma más estricta
-                en_codigo = df[COL_CODIGO].astype(str).str.lower().str.contains(palabra, na=False)
-                en_descripcion = df[COL_DESCRIPCION].astype(str).str.lower().str.contains(r'\b' + palabra + r'\b', regex=True, na=False)
-                
-                # Si la palabra es muy corta o tiene caracteres especiales, usamos una búsqueda normal para no romper el sistema
-                if len(palabra) <= 3 or not palabra.isalnum():
-                    en_descripcion = df[COL_DESCRIPCION].astype(str).str.lower().str.contains(palabra, na=False)
-                
-                mascara = mascara & (en_codigo | en_descripcion)
+            resultados_exactos = df[mascara_exacta]
 
-            resultados = df[mascara]
+            if not resultados_exactos.empty:
+                resultados = resultados_exactos.copy()
+            else:
+                # 2. Si no hay coincidencia exacta, aplicamos RapidFuzz fila por fila
+                # Creamos una función que evalúa qué tan parecida es la consulta con la descripción de tu inventario
+                def calcular_similitud(fila):
+                    desc = str(fila[COL_DESCRIPCION]).lower()
+                    cod = str(fila[COL_CODIGO]).lower()
+                    
+                    # Comparamos la consulta con la descripción (usamos WRatio que es excelente para textos cortos)
+                    score_desc = fuzz.WRatio(palabras_clave, desc)
+                    # Comparamos con el código por si el usuario metió un número similar
+                    score_cod = fuzz.token_set_ratio(palabras_clave, cod) 
+                    
+                    return max(score_desc, score_cod)
+
+                # Copiamos el dataframe temporalmente para no alterar el original
+                df_busqueda = df.copy()
+                df_busqueda['coincidencia'] = df_busqueda.apply(calcular_similitud, axis=1)
+                
+                # Filtramos las filas que tengan más del 65% de similitud y ordenamos de mayor a menor
+                resultados = df_busqueda[df_busqueda['coincidencia'] >= 65].sort_values(by='coincidencia', ascending=False)
         else:
             resultados = pd.DataFrame()
 
@@ -65,7 +78,8 @@ if df is not None:
         if not resultados.empty:
             st.success(f"✅ Se encontraron {len(resultados)} coincidencia(s):")
             
-            for _, fila in resultados.iterrows():
+            # Limitamos a los mejores 10 resultados para no saturar la pantalla si hay demasiadas opciones difusas
+            for _, fila in resultados.head(10).iterrows():
                 # Tarjeta limpia para cada producto
                 with st.container():
                     st.markdown(f"### 🔹 {fila[COL_DESCRIPCION]}")
@@ -84,11 +98,4 @@ if df is not None:
                     st.markdown("<div style='padding: 2px;'></div>", unsafe_allow_html=True)
                     st.divider()
         else:
-            st.error("❌ No se encontraron resultados exactos con esos términos.")
-            
-            # Sistema de sugerencia inteligente por si se escribe con errores de ortografía
-            lista_descripciones = df[COL_DESCRIPCION].astype(str).tolist()
-            sugerencia = process.extractOne(consulta, lista_descripciones)
-            
-            if sugerencia and sugerencia[1] > 55:
-                st.warning(f"💡 ¿Tal vez quisiste decir: **{sugerencia[0]}**?")
+            st.error("❌ No se encontraron resultados ni sugerencias aproximadas para tu búsqueda.")
