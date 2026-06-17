@@ -240,12 +240,6 @@ else:
         "No se encontraron resultados."
     )
 
-    else:
-
-        st.warning(
-            "No se encontraron resultados."
-        )
-
 else:
 
     st.info(
