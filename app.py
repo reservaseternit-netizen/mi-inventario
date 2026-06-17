@@ -40,24 +40,6 @@ st.markdown("""
     margin-bottom:20px;
 }
 
-.resultado{
-    background:white;
-    border-radius:10px;
-    padding:15px;
-    margin-bottom:10px;
-    border-left:5px solid #d71920;
-    box-shadow:0 2px 6px rgba(0,0,0,0.08);
-}
-
-.codigo{
-    color:#666;
-}
-
-.stock{
-    color:#198754;
-    font-weight:bold;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -230,35 +212,23 @@ if consulta:
 
         for _, fila in resultados.iterrows():
 
-            stock = float(
-                fila["Cantidad stock valorado"]
-            )
+            stock = int(fila["Cantidad stock valorado"])
 
-            st.markdown(
-                f"""
-                <div class="resultado">
+            with st.container(border=True):
 
-                    <b>Descripción:</b><br>
-                    {fila['Texto breve de material']}
+                st.markdown(
+                    f"### 🔩 {fila['Texto breve de material']}"
+                )
 
-                    <br><br>
+                col_a, col_b = st.columns(2)
 
-                    <b>Código:</b>
-                    <span class="codigo">
-                        {fila['Material']}
-                    </span>
+                with col_a:
+                    st.write("**Código:**")
+                    st.write(fila["Material"])
 
-                    <br><br>
-
-                    <b>Stock:</b>
-                    <span class="stock">
-                        {stock:,.0f} {fila['UMB']}
-                    </span>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                with col_b:
+                    st.write("**Stock Disponible:**")
+                    st.write(f"{stock} {fila['UMB']}")
 
     else:
 
