@@ -145,28 +145,10 @@ st.divider()
 # =====================================================
 # FILTROS
 # =====================================================
-
-col1, col2 = st.columns([4,1])
-
-with col1:
-
-    consulta = st.text_input(
-        "🔍 Buscar",
-        placeholder="Ej: Rodamiento 6205"
-    )
-
-with col2:
-
-    ubicaciones = (
-        ["Todas"]
-        + sorted(df["Ubic."].unique().tolist())
-    )
-
-    filtro_ubicacion = st.selectbox(
-        "Ubicación",
-        ubicaciones
-    )
-
+consulta = st.text_input(
+    "🔍 Buscar",
+    placeholder="Ej: Rodamiento 6205"
+)
 # =====================================================
 # BÚSQUEDA
 # =====================================================
