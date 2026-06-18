@@ -40,6 +40,11 @@ st.markdown("""
     margin-bottom:20px;
 }
 
+/* mejora visual del input */
+div[data-baseweb="input"]{
+    border-radius:10px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -51,57 +56,27 @@ st.markdown("""
 def cargar_datos():
 
     try:
-
         df = pd.read_excel("mi inventario.xlsx")
 
         df.columns = df.columns.astype(str).str.strip()
 
-        df["Material"] = (
-            df["Material"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["Texto breve de material"] = (
-            df["Texto breve de material"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["Ubic."] = (
-            df["Ubic."]
-            .fillna("No asignada")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["UMB"] = (
-            df["UMB"]
-            .fillna("UN")
-            .astype(str)
-            .str.strip()
-        )
+        df["Material"] = df["Material"].fillna("").astype(str).str.strip()
+        df["Texto breve de material"] = df["Texto breve de material"].fillna("").astype(str).str.strip()
+        df["Ubic."] = df["Ubic."].fillna("No asignada").astype(str).str.strip()
+        df["UMB"] = df["UMB"].fillna("UN").astype(str).str.strip()
 
         df["Cantidad stock valorado"] = (
-            pd.to_numeric(
-                df["Cantidad stock valorado"],
-                errors="coerce"
-            )
+            pd.to_numeric(df["Cantidad stock valorado"], errors="coerce")
             .fillna(0)
         )
 
         df["search_col"] = (
-            df["Texto breve de material"]
-            + " "
-            + df["Material"]
+            df["Texto breve de material"] + " " + df["Material"]
         ).str.lower()
 
         return df
 
     except Exception as e:
-
         st.error(f"Error cargando Excel: {e}")
         return None
 
@@ -112,19 +87,24 @@ if df is None:
     st.stop()
 
 # =====================================================
-# LOGO (MEJORADO)
+# LOGO (SOLUCIÓN PROFESIONAL)
 # =====================================================
 
-col1, col2, col3 = st.columns([2,3,2])
+col1, col2, col3 = st.columns([2,4,2])
 
 with col2:
-    try:
-        st.image(
-            "logo.png",
-            width=220
-        )
-    except:
-        pass
+    st.markdown("""
+        <div style="text-align:center;">
+            <img src="logo.png" style="
+                width: 260px;
+                max-width: 100%;
+                height: auto;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            ">
+        </div>
+    """, unsafe_allow_html=True)
 
 # =====================================================
 # TÍTULOS
@@ -143,7 +123,7 @@ st.markdown(
 st.divider()
 
 # =====================================================
-# FILTROS
+# BUSCADOR
 # =====================================================
 
 consulta = st.text_input(
@@ -162,9 +142,7 @@ if consulta:
     if consulta.isdigit():
 
         resultados = df[
-            df["Material"]
-            .astype(str)
-            .str.contains(consulta, na=False)
+            df["Material"].astype(str).str.contains(consulta, na=False)
         ].copy()
 
     else:
@@ -196,9 +174,7 @@ if consulta:
 
             with st.container(border=True):
 
-                st.markdown(
-                    f"### 🔩 {fila['Texto breve de material']}"
-                )
+                st.markdown(f"### 🔩 {fila['Texto breve de material']}")
 
                 col1, col2, col3 = st.columns(3)
 
@@ -215,9 +191,7 @@ if consulta:
                     st.write(f"{stock} {fila['UMB']}")
 
     else:
-
         st.warning("No se encontraron resultados.")
 
 else:
-
     st.info("Ingrese un código o descripción para buscar.")
