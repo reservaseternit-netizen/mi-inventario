@@ -20,24 +20,24 @@ st.markdown("""
 <style>
 
 .block-container{
-    max-width:900px;
-    padding-top:2rem;
+    max-width:1100px;
+    padding-top:1rem;
 }
 
 .titulo{
     text-align:center;
     color:#d71920;
-    font-size:34px;
-    font-weight:800;
-    margin-top:10px;
-    margin-bottom:5px;
+    font-size:28px;
+    font-weight:700;
+    margin-top:5px;
+    margin-bottom:0px;
 }
 
 .subtitulo{
     text-align:center;
-    color:#666;
-    font-size:16px;
-    margin-bottom:20px;
+    color:#777;
+    font-size:15px;
+    margin-bottom:15px;
 }
 
 </style>
@@ -115,13 +115,13 @@ if df is None:
 # LOGO
 # =====================================================
 
-col1, col2, col3 = st.columns([1,5,1])
+col1, col2, col3 = st.columns([2,2,2])
 
 with col2:
     try:
         st.image(
             "logo.png",
-            use_container_width=True
+            width=220
         )
     except:
         pass
@@ -143,12 +143,16 @@ st.markdown(
 st.divider()
 
 # =====================================================
-# FILTROS
+# BUSCADOR
 # =====================================================
+
+st.markdown("### 🔎 Buscar Repuesto")
+
 consulta = st.text_input(
-    "🔍 Buscar",
-    placeholder="Ej: Rodamiento 6205"
+    "",
+    placeholder="Escriba código, descripción o referencia..."
 )
+
 # =====================================================
 # BÚSQUEDA
 # =====================================================
@@ -157,7 +161,6 @@ if consulta:
 
     consulta = consulta.lower().strip()
 
-    # Buscar por código exacto
     if consulta.isdigit():
 
         resultados = df[
@@ -192,14 +195,18 @@ if consulta:
 
     if not resultados.empty:
 
+        st.success(
+            f"Resultados encontrados: {len(resultados)}"
+        )
+
         for _, fila in resultados.iterrows():
 
-            stock = int(fila["Cantidad stock valorado"])
+            stock = fila["Cantidad stock valorado"]
 
             with st.container(border=True):
 
                 st.markdown(
-                    f"### 🔩 {fila['Texto breve de material']}"
+                    f"#### 🔩 {fila['Texto breve de material']}"
                 )
 
                 col1, col2, col3 = st.columns(3)
@@ -214,7 +221,9 @@ if consulta:
 
                 with col3:
                     st.write("**Stock**")
-                    st.write(f"{stock} {fila['UMB']}")
+                    st.write(
+                        f"{stock:,.0f} {fila['UMB']}"
+                    )
 
     else:
 
