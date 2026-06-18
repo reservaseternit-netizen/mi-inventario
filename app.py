@@ -7,9 +7,9 @@ from rapidfuzz import process, fuzz
 # =====================================================
 
 st.set_page_config(
-    page_title="Inventario Repuestos",
+    page_title="Consulta Inventario Repuestos",
     page_icon="📦",
-    layout="wide"
+    layout="centered"
 )
 
 # =====================================================
@@ -20,16 +20,16 @@ st.markdown("""
 <style>
 
 .block-container{
-    max-width:1200px;
-    padding-top:0.5rem;
+    max-width:900px;
+    padding-top:2rem;
 }
 
 .titulo{
     text-align:center;
     color:#d71920;
-    font-size:32px;
-    font-weight:700;
-    margin-top:0px;
+    font-size:34px;
+    font-weight:800;
+    margin-top:10px;
     margin-bottom:5px;
 }
 
@@ -37,7 +37,7 @@ st.markdown("""
     text-align:center;
     color:#666;
     font-size:16px;
-    margin-bottom:10px;
+    margin-bottom:20px;
 }
 
 </style>
@@ -115,13 +115,13 @@ if df is None:
 # LOGO
 # =====================================================
 
-col1, col2, col3 = st.columns([1,2,1])
+col1, col2, col3 = st.columns([1,5,1])
 
 with col2:
     try:
         st.image(
             "logo.png",
-            width=320
+            use_container_width=True
         )
     except:
         pass
@@ -131,26 +131,24 @@ with col2:
 # =====================================================
 
 st.markdown(
-    "<div class='titulo'>Inventario de Repuestos</div>",
+    "<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>",
     unsafe_allow_html=True
 )
 
 st.markdown(
-    "<div class='subtitulo'>Consulte disponibilidad y ubicación de materiales en tiempo real</div>",
+    "<div class='subtitulo'>Busque por código, descripción o medida</div>",
     unsafe_allow_html=True
 )
 
 st.divider()
 
 # =====================================================
-# BUSCADOR
+# FILTROS
 # =====================================================
-
 consulta = st.text_input(
-    "",
-    placeholder="🔍 Buscar por código, descripción o referencia..."
+    "🔍 Buscar",
+    placeholder="Ej: Rodamiento 6205"
 )
-
 # =====================================================
 # BÚSQUEDA
 # =====================================================
@@ -159,7 +157,7 @@ if consulta:
 
     consulta = consulta.lower().strip()
 
-    # Buscar por código
+    # Buscar por código exacto
     if consulta.isdigit():
 
         resultados = df[
@@ -194,18 +192,14 @@ if consulta:
 
     if not resultados.empty:
 
-        st.success(
-            f"Resultados encontrados: {len(resultados)}"
-        )
-
         for _, fila in resultados.iterrows():
 
-            stock = fila["Cantidad stock valorado"]
+            stock = int(fila["Cantidad stock valorado"])
 
             with st.container(border=True):
 
                 st.markdown(
-                    f"#### 🔩 {fila['Texto breve de material']}"
+                    f"### 🔩 {fila['Texto breve de material']}"
                 )
 
                 col1, col2, col3 = st.columns(3)
@@ -220,9 +214,7 @@ if consulta:
 
                 with col3:
                     st.write("**Stock**")
-                    st.write(
-                        f"{stock:,.0f} {fila['UMB']}"
-                    )
+                    st.write(f"{stock} {fila['UMB']}")
 
     else:
 
