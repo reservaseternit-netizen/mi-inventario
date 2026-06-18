@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 from rapidfuzz import process, fuzz
+import base64
 
 # =====================================================
 # CONFIGURACIÓN GENERAL
 # =====================================================
-
 st.set_page_config(
     page_title="Consulta Inventario Repuestos",
     page_icon="📦",
@@ -15,96 +15,72 @@ st.set_page_config(
 # =====================================================
 # ESTILOS
 # =====================================================
-
 st.markdown("""
 <style>
-
-.block-container{
-    max-width:900px;
-    padding-top:2rem;
+.block-container {
+    max-width: 900px;
+    padding-top: 2rem;
 }
 
-.titulo{
-    text-align:center;
-    color:#d71920;
-    font-size:34px;
-    font-weight:800;
-    margin-top:10px;
-    margin-bottom:5px;
+/* Contenedor optimizado para máxima nitidez del Logo */
+.logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.subtitulo{
-    text-align:center;
-    color:#666;
-    font-size:16px;
-    margin-bottom:20px;
+.logo-img {
+    max-width: 240px; /* Controla el tamaño visual óptimo en pantalla */
+    width: 100%;
+    height: auto;
+    image-rendering: -webkit-optimize-contrast; /* Optimiza nitidez en navegadores basados en Webkit */
+    image-rendering: crisp-edges;
 }
 
+.titulo {
+    text-align: center;
+    color: #d71920; /* Rojo corporativo */
+    font-size: 34px;
+    font-weight: 800;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.subtitulo {
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # =====================================================
 # CARGA DE DATOS
 # =====================================================
-
 @st.cache_data
 def cargar_datos():
-
     try:
-
         df = pd.read_excel("mi inventario.xlsx")
-
         df.columns = df.columns.astype(str).str.strip()
 
-        df["Material"] = (
-            df["Material"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["Texto breve de material"] = (
-            df["Texto breve de material"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["Ubic."] = (
-            df["Ubic."]
-            .fillna("No asignada")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["UMB"] = (
-            df["UMB"]
-            .fillna("UN")
-            .astype(str)
-            .str.strip()
-        )
+        df["Material"] = df["Material"].fillna("").astype(str).str.strip()
+        df["Texto breve de material"] = df["Texto breve de material"].fillna("").astype(str).str.strip()
+        df["Ubic."] = df["Ubic."].fillna("No asignada").astype(str).str.strip()
+        df["UMB"] = df["UMB"].fillna("UN").astype(str).str.strip()
 
         df["Cantidad stock valorado"] = (
-            pd.to_numeric(
-                df["Cantidad stock valorado"],
-                errors="coerce"
-            )
+            pd.to_numeric(df["Cantidad stock valorado"], errors="coerce")
             .fillna(0)
+            .astype(int)
         )
 
-        df["search_col"] = (
-            df["Texto breve de material"]
-            + " "
-            + df["Material"]
-        ).str.lower()
-
+        df["search_col"] = (df["Texto breve de material"] + " " + df["Material"]).str.lower()
         return df
-
     except Exception as e:
-
         st.error(f"Error cargando Excel: {e}")
         return None
-
 
 df = cargar_datos()
 
@@ -112,121 +88,75 @@ if df is None:
     st.stop()
 
 # =====================================================
-# LOGO
+# LOGO (RENDERIZADO NÍTIDO Y CENTRADO)
 # =====================================================
-
-from PIL import Image
-
-col1, col2, col3 = st.columns([1,2,1])
-
-with col2:
-    try:
-        logo = Image.open("logo.png")
-            
-        st.image(
-            logo,
-            width=220,
-            output_format="PNG"
-        )
+try:
+    # Convertimos la imagen a Base64 para incrustarla directamente en el CSS
+    with open("logo.png", "rb") as image_file:
+        encoded_logo = base64.b64encode(image_file.read()).decode()
+    
+    # Renderizado centrado mediante Flexbox con suavizado de bordes activo
+    st.markdown(
+        f"""
+        <div class="logo-container">
+            <img class="logo-img" src="data:image/png;base64,{encoded_logo}" alt="Logo Eternit">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+except Exception as e:
+    st.error(f"No se pudo cargar el logo: {e}")
         
-    except Exception as e:
-        st.error(f"No se pudo cargar el logo: {e}")
-        
 # =====================================================
-# TITULOS
+# TÍTULOS
 # =====================================================
-
-st.markdown(
-    "<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>",
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    "<div class='subtitulo'>Busque por código, descripción o medida</div>",
-    unsafe_allow_html=True
-)
-
+st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitulo'>Busque por código, descripción o medida</div>", unsafe_allow_html=True)
 st.divider()
 
 # =====================================================
 # FILTRO
 # =====================================================
-
-consulta = st.text_input(
-    "🔍 Buscar",
-    placeholder="Ej: Rodamiento 6205"
-)
+consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip()
 
 # =====================================================
-# BUSQUEDA
+# BÚSQUEDA Y RESULTADOS
 # =====================================================
-
 if consulta:
+    consulta_lower = consulta.lower()
 
-    consulta = consulta.lower().strip()
-
-    if consulta.isdigit():
-
-        resultados = df[
-            df["Material"]
-            .astype(str)
-            .str.contains(
-                consulta,
-                na=False
-            )
-        ].copy()
-
+    if consulta_lower.isdigit():
+        resultados = df[df["Material"].str.contains(consulta_lower, na=False)].copy()
     else:
-
+        # Corregido el orden del desempaque para evitar desajustes de índices
         resultados_data = process.extract(
-            consulta,
+            consulta_lower,
             df["search_col"].tolist(),
             scorer=fuzz.token_set_ratio,
             limit=30
         )
 
-        indices = [
-            df.index[i]
-            for valor, score, i in resultados_data
-            if score >= 60
-        ]
-
+        indices = [df.index[i] for _, score, i in resultados_data if score >= 60]
         resultados = df.loc[indices].copy()
 
     if not resultados.empty:
-
+        st.caption(f"Se encontraron {len(resultados)} resultados para '{consulta}'")
+        
         for _, fila in resultados.iterrows():
-
-            stock = int(fila["Cantidad stock valorado"])
-
             with st.container(border=True):
-
-                st.markdown(
-                    f"### 🔩 {fila['Texto breve de material']}"
-                )
+                st.markdown(f"### 🔩 {fila['Texto breve de material']}")
 
                 col1, col2, col3 = st.columns(3)
-
                 with col1:
                     st.write("**Código**")
                     st.write(fila["Material"])
-
                 with col2:
                     st.write("**Ubicación**")
                     st.write(fila["Ubic."])
-
                 with col3:
                     st.write("**Stock**")
-                    st.write(f"{stock} {fila['UMB']}")
-
+                    st.write(f"{fila['Cantidad stock valorado']} {fila['UMB']}")
     else:
-
-        st.warning(
-            "No se encontraron resultados."
-        )
-
+        st.warning("No se encontraron resultados.")
 else:
-
-    st.info(
-        "Ingrese un código o descripción para buscar."
-    )
+    st.info("Ingrese un código o descripción para buscar.")
