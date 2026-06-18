@@ -119,22 +119,34 @@ st.divider()
 consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip()
 
 # =====================================================
-# BÚSQUEDA Y RESULTADOS
+# BÚSQUEDA Y RESULTADOS (OPTIMIZADA)
 # =====================================================
 if consulta:
     consulta_lower = consulta.lower()
 
+    # Si es un código numérico directo
     if consulta_lower.isdigit():
         resultados = df[df["Material"].str.contains(consulta_lower, na=False)].copy()
     else:
+        # Usamos WRatio que combina partial_ratio (para "trape" -> "trapeador") 
+        # y fuzzy matching para errores ortográficos ("escova" -> "escoba")
         resultados_data = process.extract(
             consulta_lower,
             df["search_col"].tolist(),
-            scorer=fuzz.token_set_ratio,
-            limit=30
+            scorer=fuzz.WRatio, 
+            limit=20
         )
-        indices = [df.index[i] for _, score, i in resultados_data if score >= 60]
-        resultados = df.loc[indices].copy()
+        
+        # Filtramos con un umbral de coincidencia (score). 
+        # 55-60 es ideal para tolerar errores ortográficos sin traer basura.
+        indices_validos = []
+        for texto_encontrado, score, indice_original in resultados_data:
+            if score >= 55:  
+                # Obtenemos el índice real del DataFrame usando la posición
+                indices_validos.append(df.index[indice_original])
+        
+        # Mantenemos el orden de relevancia que nos da rapidfuzz
+        resultados = df.loc[indices_validos].copy()
 
     if not resultados.empty:
         st.caption(f"Se encontraron {len(resultados)} resultados para '{consulta}'")
@@ -152,6 +164,6 @@ if consulta:
                     st.write("**Stock**")
                     st.write(f"{fila['Cantidad stock valorado']} {fila['UMB']}")
     else:
-        st.warning("No se encontraron resultados.")
+        st.warning("No se encontraron resultados exactos o similares. Intenta con otra palabra.")
 else:
     st.info("Ingrese un código o descripción para buscar.")
