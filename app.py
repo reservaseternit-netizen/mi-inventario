@@ -7,9 +7,9 @@ from rapidfuzz import process, fuzz
 # =====================================================
 
 st.set_page_config(
-    page_title="Consulta Inventario Repuestos",
+    page_title="Inventario Repuestos",
     page_icon="📦",
-    layout="centered"
+    layout="wide"
 )
 
 # =====================================================
@@ -20,24 +20,24 @@ st.markdown("""
 <style>
 
 .block-container{
-    max-width:1100px;
-    padding-top:1rem;
+    max-width:1200px;
+    padding-top:0.5rem;
 }
 
 .titulo{
     text-align:center;
     color:#d71920;
-    font-size:28px;
+    font-size:32px;
     font-weight:700;
-    margin-top:5px;
-    margin-bottom:0px;
+    margin-top:0px;
+    margin-bottom:5px;
 }
 
 .subtitulo{
     text-align:center;
-    color:#777;
-    font-size:15px;
-    margin-bottom:15px;
+    color:#666;
+    font-size:16px;
+    margin-bottom:10px;
 }
 
 </style>
@@ -115,13 +115,13 @@ if df is None:
 # LOGO
 # =====================================================
 
-col1, col2, col3 = st.columns([2,2,2])
+col1, col2, col3 = st.columns([1,2,1])
 
 with col2:
     try:
         st.image(
             "logo.png",
-            width=220
+            width=320
         )
     except:
         pass
@@ -131,12 +131,12 @@ with col2:
 # =====================================================
 
 st.markdown(
-    "<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>",
+    "<div class='titulo'>Inventario de Repuestos</div>",
     unsafe_allow_html=True
 )
 
 st.markdown(
-    "<div class='subtitulo'>Busque por código, descripción o medida</div>",
+    "<div class='subtitulo'>Consulte disponibilidad y ubicación de materiales en tiempo real</div>",
     unsafe_allow_html=True
 )
 
@@ -146,11 +146,9 @@ st.divider()
 # BUSCADOR
 # =====================================================
 
-st.markdown("### 🔎 Buscar Repuesto")
-
 consulta = st.text_input(
     "",
-    placeholder="Escriba código, descripción o referencia..."
+    placeholder="🔍 Buscar por código, descripción o referencia..."
 )
 
 # =====================================================
@@ -161,6 +159,7 @@ if consulta:
 
     consulta = consulta.lower().strip()
 
+    # Buscar por código
     if consulta.isdigit():
 
         resultados = df[
