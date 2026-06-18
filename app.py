@@ -13,37 +13,38 @@ st.set_page_config(
 )
 
 # =====================================================
-# ESTILOS
+# ESTILOS (AJUSTADOS PARA CERCANÍA Y COLOR NEGRO)
 # =====================================================
 st.markdown("""
 <style>
 .block-container {
     max-width: 900px;
-    padding-top: 2rem;
+    padding-top: 1.5rem; /* Reducido un poco el espacio superior total */
 }
 
-/* Contenedor optimizado para máxima nitidez del Logo */
+/* Contenedor del Logo con margen inferior reducido */
 .logo-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: -10px; /* Margen negativo para acercar el título */
 }
 
 .logo-img {
-    max-width: 240px; /* Controla el tamaño visual óptimo en pantalla */
+    max-width: 240px;
     width: 100%;
     height: auto;
-    image-rendering: -webkit-optimize-contrast; /* Optimiza nitidez en navegadores basados en Webkit */
+    image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
 }
 
+/* Título en NEGRO y más pegado arriba */
 .titulo {
     text-align: center;
-    color: #d71920; /* Rojo corporativo */
-    font-size: 34px;
+    color: #000000; /* Color Negro */
+    font-size: 32px;
     font-weight: 800;
-    margin-top: 10px;
+    margin-top: 0px;    /* Eliminado el margen superior */
     margin-bottom: 5px;
 }
 
@@ -51,7 +52,7 @@ st.markdown("""
     text-align: center;
     color: #666;
     font-size: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -83,19 +84,16 @@ def cargar_datos():
         return None
 
 df = cargar_datos()
-
 if df is None:
     st.stop()
 
 # =====================================================
-# LOGO (RENDERIZADO NÍTIDO Y CENTRADO)
+# LOGO
 # =====================================================
 try:
-    # Convertimos la imagen a Base64 para incrustarla directamente en el CSS
     with open("logo.png", "rb") as image_file:
         encoded_logo = base64.b64encode(image_file.read()).decode()
     
-    # Renderizado centrado mediante Flexbox con suavizado de bordes activo
     st.markdown(
         f"""
         <div class="logo-container">
@@ -108,10 +106,11 @@ except Exception as e:
     st.error(f"No se pudo cargar el logo: {e}")
         
 # =====================================================
-# TÍTULOS
+# TÍTULOS (AHORA MÁS PEGADOS Y EN NEGRO)
 # =====================================================
 st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitulo'>Busque por código, descripción o medida</div>", unsafe_allow_html=True)
+
 st.divider()
 
 # =====================================================
@@ -128,24 +127,20 @@ if consulta:
     if consulta_lower.isdigit():
         resultados = df[df["Material"].str.contains(consulta_lower, na=False)].copy()
     else:
-        # Corregido el orden del desempaque para evitar desajustes de índices
         resultados_data = process.extract(
             consulta_lower,
             df["search_col"].tolist(),
             scorer=fuzz.token_set_ratio,
             limit=30
         )
-
         indices = [df.index[i] for _, score, i in resultados_data if score >= 60]
         resultados = df.loc[indices].copy()
 
     if not resultados.empty:
         st.caption(f"Se encontraron {len(resultados)} resultados para '{consulta}'")
-        
         for _, fila in resultados.iterrows():
             with st.container(border=True):
                 st.markdown(f"### 🔩 {fila['Texto breve de material']}")
-
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.write("**Código**")
