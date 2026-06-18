@@ -129,8 +129,8 @@ with col2:
             output_format="PNG"
         )
         
-     except Exception as e:
-         st.error(f"No se pudo cargar el logo: {e}")
+    except Exception as e:
+        st.error(f"No se pudo cargar el logo: {e}")
         
 # =====================================================
 # TITULOS
