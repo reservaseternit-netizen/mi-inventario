@@ -115,17 +115,23 @@ if df is None:
 # LOGO
 # =====================================================
 
+from PIL import Image
+
 col1, col2, col3 = st.columns([1,2,1])
 
 with col2:
     try:
+        logo = Image.open("logo.png")
+            
         st.image(
-            "logo.png",
-            width=300
+            logo,
+            width=220,
+            output_format="PNG"
         )
-    except Exception as e:
-        st.error(f"No se pudo cargar el logo: {e}")
-
+        
+     except Exception as e:
+         st.error(f"No se pudo cargar el logo: {e}")
+        
 # =====================================================
 # TITULOS
 # =====================================================
