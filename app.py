@@ -40,11 +40,6 @@ st.markdown("""
     margin-bottom:20px;
 }
 
-/* mejora visual del input */
-div[data-baseweb="input"]{
-    border-radius:10px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -56,27 +51,57 @@ div[data-baseweb="input"]{
 def cargar_datos():
 
     try:
+
         df = pd.read_excel("mi inventario.xlsx")
 
         df.columns = df.columns.astype(str).str.strip()
 
-        df["Material"] = df["Material"].fillna("").astype(str).str.strip()
-        df["Texto breve de material"] = df["Texto breve de material"].fillna("").astype(str).str.strip()
-        df["Ubic."] = df["Ubic."].fillna("No asignada").astype(str).str.strip()
-        df["UMB"] = df["UMB"].fillna("UN").astype(str).str.strip()
+        df["Material"] = (
+            df["Material"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+
+        df["Texto breve de material"] = (
+            df["Texto breve de material"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+
+        df["Ubic."] = (
+            df["Ubic."]
+            .fillna("No asignada")
+            .astype(str)
+            .str.strip()
+        )
+
+        df["UMB"] = (
+            df["UMB"]
+            .fillna("UN")
+            .astype(str)
+            .str.strip()
+        )
 
         df["Cantidad stock valorado"] = (
-            pd.to_numeric(df["Cantidad stock valorado"], errors="coerce")
+            pd.to_numeric(
+                df["Cantidad stock valorado"],
+                errors="coerce"
+            )
             .fillna(0)
         )
 
         df["search_col"] = (
-            df["Texto breve de material"] + " " + df["Material"]
+            df["Texto breve de material"]
+            + " "
+            + df["Material"]
         ).str.lower()
 
         return df
 
     except Exception as e:
+
         st.error(f"Error cargando Excel: {e}")
         return None
 
@@ -87,27 +112,22 @@ if df is None:
     st.stop()
 
 # =====================================================
-# LOGO (SOLUCIÓN PROFESIONAL)
+# LOGO
 # =====================================================
 
-col1, col2, col3 = st.columns([2,4,2])
+col1, col2, col3 = st.columns([1,2,1])
 
 with col2:
-    st.markdown("""
-        <div style="text-align:center;">
-            <img src="logo.png" style="
-                width: 260px;
-                max-width: 100%;
-                height: auto;
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-            ">
-        </div>
-    """, unsafe_allow_html=True)
+    try:
+        st.image(
+            "logo.png",
+            width=300
+        )
+    except Exception as e:
+        st.error(f"No se pudo cargar el logo: {e}")
 
 # =====================================================
-# TÍTULOS
+# TITULOS
 # =====================================================
 
 st.markdown(
@@ -123,7 +143,7 @@ st.markdown(
 st.divider()
 
 # =====================================================
-# BUSCADOR
+# FILTRO
 # =====================================================
 
 consulta = st.text_input(
@@ -132,7 +152,7 @@ consulta = st.text_input(
 )
 
 # =====================================================
-# BÚSQUEDA
+# BUSQUEDA
 # =====================================================
 
 if consulta:
@@ -142,7 +162,12 @@ if consulta:
     if consulta.isdigit():
 
         resultados = df[
-            df["Material"].astype(str).str.contains(consulta, na=False)
+            df["Material"]
+            .astype(str)
+            .str.contains(
+                consulta,
+                na=False
+            )
         ].copy()
 
     else:
@@ -162,10 +187,6 @@ if consulta:
 
         resultados = df.loc[indices].copy()
 
-    # =================================================
-    # RESULTADOS
-    # =================================================
-
     if not resultados.empty:
 
         for _, fila in resultados.iterrows():
@@ -174,7 +195,9 @@ if consulta:
 
             with st.container(border=True):
 
-                st.markdown(f"### 🔩 {fila['Texto breve de material']}")
+                st.markdown(
+                    f"### 🔩 {fila['Texto breve de material']}"
+                )
 
                 col1, col2, col3 = st.columns(3)
 
@@ -191,7 +214,13 @@ if consulta:
                     st.write(f"{stock} {fila['UMB']}")
 
     else:
-        st.warning("No se encontraron resultados.")
+
+        st.warning(
+            "No se encontraron resultados."
+        )
 
 else:
-    st.info("Ingrese un código o descripción para buscar.")
+
+    st.info(
+        "Ingrese un código o descripción para buscar."
+    )
