@@ -204,13 +204,6 @@ if consulta:
 
         resultados = df.loc[indices].copy()
 
-    # Filtro de ubicación
-    if filtro_ubicacion != "Todas":
-
-        resultados = resultados[
-            resultados["Ubic."] == filtro_ubicacion
-        ]
-
     # =================================================
     # RESULTADOS
     # =================================================
