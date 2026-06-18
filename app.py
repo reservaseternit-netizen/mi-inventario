@@ -112,16 +112,16 @@ if df is None:
     st.stop()
 
 # =====================================================
-# LOGO
+# LOGO (MEJORADO)
 # =====================================================
 
-col1, col2, col3 = st.columns([1,5,1])
+col1, col2, col3 = st.columns([2,3,2])
 
 with col2:
     try:
         st.image(
             "logo.png",
-            use_container_width=True
+            width=220
         )
     except:
         pass
@@ -145,10 +145,12 @@ st.divider()
 # =====================================================
 # FILTROS
 # =====================================================
+
 consulta = st.text_input(
     "🔍 Buscar",
     placeholder="Ej: Rodamiento 6205"
 )
+
 # =====================================================
 # BÚSQUEDA
 # =====================================================
@@ -157,16 +159,12 @@ if consulta:
 
     consulta = consulta.lower().strip()
 
-    # Buscar por código exacto
     if consulta.isdigit():
 
         resultados = df[
             df["Material"]
             .astype(str)
-            .str.contains(
-                consulta,
-                na=False
-            )
+            .str.contains(consulta, na=False)
         ].copy()
 
     else:
@@ -218,12 +216,8 @@ if consulta:
 
     else:
 
-        st.warning(
-            "No se encontraron resultados."
-        )
+        st.warning("No se encontraron resultados.")
 
 else:
 
-    st.info(
-        "Ingrese un código o descripción para buscar."
-    )
+    st.info("Ingrese un código o descripción para buscar.")
