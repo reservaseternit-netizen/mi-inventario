@@ -119,7 +119,7 @@ st.divider()
 consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip()
 
 # =====================================================
-# BÚSQUEDA Y RESULTADOS (OPTIMIZADA)
+# BÚSQUEDA Y RESULTADOS (ORDENADO POR DISPONIBILIDAD)
 # =====================================================
 if consulta:
     consulta_lower = consulta.lower()
@@ -128,31 +128,74 @@ if consulta:
     if consulta_lower.isdigit():
         resultados = df[df["Material"].str.contains(consulta_lower, na=False)].copy()
     else:
-        # Usamos WRatio que combina partial_ratio (para "trape" -> "trapeador") 
-        # y fuzzy matching para errores ortográficos ("escova" -> "escoba")
+        # Usamos WRatio para tolerancia a errores y palabras incompletas
         resultados_data = process.extract(
             consulta_lower,
             df["search_col"].tolist(),
             scorer=fuzz.WRatio, 
-            limit=20
+            limit=40  # Subimos el límite para capturar los códigos bloqueados/vacíos también
         )
         
-        # Filtramos con un umbral de coincidencia (score). 
-        # 55-60 es ideal para tolerar errores ortográficos sin traer basura.
         indices_validos = []
         for texto_encontrado, score, indice_original in resultados_data:
             if score >= 55:  
-                # Obtenemos el índice real del DataFrame usando la posición
                 indices_validos.append(df.index[indice_original])
         
-        # Mantenemos el orden de relevancia que nos da rapidfuzz
+        # Filtramos los resultados iniciales del DataFrame
         resultados = df.loc[indices_validos].copy()
 
     if not resultados.empty:
-        st.caption(f"Se encontraron {len(resultados)} resultados para '{consulta}'")
+        # ---------------------------------------------------------
+        # LÓGICA DE ORDENACIÓN PRIORITARIA
+        # ---------------------------------------------------------
+        # Creamos columnas temporales para calcular la prioridad de cada fila
+        # Tiene ubicación real? (True=1, False=0)
+        tiene_ubicacion = (resultados["Ubic."] != "No asignada").astype(int)
+        # Tiene stock real? (True=1, False=0)
+        tiene_stock = (resultados["Cantidad stock valorado"] > 0).astype(int)
+        
+        # Calculamos un "Score de Disponibilidad"
+        # Si tiene ambos (ubicación y stock) dará 2 -> Va de primero
+        # Si tiene solo uno dará 1 -> Va en el medio
+        # Si no tiene nada dará 0 -> Va al final del todo
+        resultados["prioridad_dispo"] = tiene_ubicacion + tiene_stock
+        
+        # Ordenamos primero por el score de disponibilidad (de mayor a menor)
+        # y como segundo criterio mantenemos el orden de similitud de texto si aplica
+        if not consulta_lower.isdigit():
+            # Creamos un mapeo para recordar el orden de coincidencia de rapidfuzz
+            orden_similitud = {idx: i for i, idx in enumerate(indices_validos)}
+            resultados["orden_texto"] = resultados.index.map(orden_similitud)
+            
+            resultados = resultados.sort_values(
+                by=["prioridad_dispo", "orden_texto"], 
+                ascending=[False, True]
+            )
+        else:
+            # Si fue búsqueda por código numérico, ordenamos solo por disponibilidad y luego por stock
+            resultados = resultados.sort_values(
+                by=["prioridad_dispo", "Cantidad stock valorado"], 
+                ascending=[False, False]
+            )
+        # ---------------------------------------------------------
+
+        st.caption(f"Se encontraron {len(resultados)} resultados para '{consulta}' (Ordenados por disponibilidad)")
+        
         for _, fila in resultados.iterrows():
+            # Opcional: Podemos cambiar visualmente las tarjetas que están en cero o sin ubicación
+            con_stock = fila['Cantidad stock valorado'] > 0
+            con_ubic = fila['Ubic.'] != "No asignada"
+            
+            # Si el repuesto está muerto (sin stock y sin ubicación), le ponemos un aviso sutil
+            if not con_stock and not con_ubic:
+                titulo_tarjeta = f"⚠️ {fila['Texto breve de material']} (Código Sin Movimiento)"
+            elif not con_stock:
+                titulo_tarjeta = f"🔴 {fila['Texto breve de material']} (Sin Existencias)"
+            else:
+                titulo_tarjeta = f"📦 {fila['Texto breve de material']}"
+
             with st.container(border=True):
-                st.markdown(f"### 🔩 {fila['Texto breve de material']}")
+                st.markdown(f"### {titulo_tarjeta}")
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.write("**Código**")
@@ -162,7 +205,10 @@ if consulta:
                     st.write(fila["Ubic."])
                 with col3:
                     st.write("**Stock**")
-                    st.write(f"{fila['Cantidad stock valorado']} {fila['UMB']}")
+                    if con_stock:
+                        st.write(f"**{fila['Cantidad stock valorado']} {fila['UMB']}**")
+                    else:
+                        st.write(f"<span style='color:red;'>{fila['Cantidad stock valorado']} {fila['UMB']}</span>", unsafe_allow_html=True)
     else:
         st.warning("No se encontraron resultados exactos o similares. Intenta con otra palabra.")
 else:
