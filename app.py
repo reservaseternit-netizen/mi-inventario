@@ -286,7 +286,7 @@ with col6:
     st.write(fila["Stock máximo"])
 
 
- with col7:
+with col7:
     st.write("**Parte Crítica**")
 
     if str(fila["Parte crítica"]).strip():
