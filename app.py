@@ -280,6 +280,10 @@ with col7:
     else:
         st.write("NO")
     else:
-        st.warning("No se encontraron resultados exactos o similares. Intenta con otra palabra.")
+        st.warning(
+            "No se encontraron resultados exactos o similares. Intenta con otra palabra."
+        )
 else:
-    st.info("Ingrese un código o descripción para buscar.")
+    st.info(
+        "Ingrese un código o descripción para buscar.")
+    )
