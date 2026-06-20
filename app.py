@@ -298,25 +298,46 @@ if consulta:
 
                 with col3:
 
-                    st.write("**Stock**")
+                    st.write("**Stock Disponible**")
 
-                    if con_stock:
+                    if fila["Libre utilización"] > 0:
 
-                        st.write(
-                            f"**{fila['Libre utilización']} "
-                            f"{fila['Unidad medida base']}**"
+                        st.markdown(
+                            f"""
+                            <div style="
+                                background-color:#e8f5e9;
+                                border-radius:10px;
+                                padding:10px;
+                                text-align:center;
+                                font-weight:bold;
+                                font-size:28px;
+                                color:#1b5e20;
+                            ">
+                                {fila['Libre utilización']} {fila['Unidad medida base']}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
                         )
 
                     else:
 
                         st.markdown(
-                            f"<span style='color:red;'>"
-                            f"{fila['Libre utilización']} "
-                            f"{fila['Unidad medida base']}"
-                            f"</span>",
-                            unsafe_allow_html=True
+                            f"""
+                            <div style="
+                                background-color:#ffebee;
+                                border-radius:10px;
+                                padding:10px;
+                                text-align:center;
+                                font-weight:bold;
+                                font-size:28px;
+                                color:#c62828;
+                            ">
+                                {fila['Libre utilización']} {fila['Unidad medida base']}
+                            </div>
+                            """,
+                            unsafe_allow_html=Tru
                         )
-
+                        
                 st.divider()
 
                 st.markdown(
