@@ -186,9 +186,9 @@ if consulta:
         # ---------------------------------------------------------
         # Creamos columnas temporales para calcular la prioridad de cada fila
         # Tiene ubicación real? (True=1, False=0)
-        tiene_ubicacion = (resultados["Ubic."] != "No asignada").astype(int)
+        tiene_ubicacion = (resultados["Ubicación"] != "No asignada").astype(int)
         # Tiene stock real? (True=1, False=0)
-        tiene_stock = (resultados["Cantidad stock valorado"] > 0).astype(int)
+        tiene_stock = (resultados["Libre utilización"] > 0).astype(int)
         
         # Calculamos un "Score de Disponibilidad"
         # Si tiene ambos (ubicación y stock) dará 2 -> Va de primero
@@ -210,7 +210,7 @@ if consulta:
         else:
             # Si fue búsqueda por código numérico, ordenamos solo por disponibilidad y luego por stock
             resultados = resultados.sort_values(
-                by=["prioridad_dispo", "Cantidad stock valorado"], 
+                by=["prioridad_dispo", "Libre utilización"] 
                 ascending=[False, False]
             )
         # ---------------------------------------------------------
@@ -220,7 +220,7 @@ if consulta:
         for _, fila in resultados.iterrows():
             # Opcional: Podemos cambiar visualmente las tarjetas que están en cero o sin ubicación
             con_stock = fila['Libre utilización'] > 0
-            con_ubic = fila['Ubic.'] != "No asignada"
+            con_ubic = fila['Ubicación'] != "No asignada"
             
             # Si el repuesto está muerto (sin stock y sin ubicación), le ponemos un aviso sutil
             if not con_stock and not con_ubic:
@@ -242,9 +242,43 @@ if consulta:
                 with col3:
                     st.write("**Stock**")
                     if con_stock:
-                        st.write(f"**{fila["Libre utilización"]} {fila["Unidad medida base"]}**")
+                        st.write(
+                            f"**{fila['Libre utilización']} {fila['Unidad medida base']}**"
+                        )
                     else:
-                        st.write(f"<span style='color:red;'>{fila['Cantidad stock valorado']} {fila['UMB']}</span>", unsafe_allow_html=True)
+                        st.markdown(
+                            f"<span style='color:red;'>{fila['Libre utilización']} {fila['Unidad medida base']}</span>",
+                            unsafe_allow_html=True
+                        )
+                        st.divider()
+
+st.markdown("#### ⚙️ Parametrización")
+
+col4, col5, col6, col7 = st.columns(4)
+
+
+with col4:
+    st.write("**Planificación**")
+    st.write(fila["Caract.planif.nec."])
+
+
+with col5:
+    st.write("**Punto Pedido**")
+    st.write(fila["Punto de pedido"])
+
+
+with col6:
+    st.write("**Stock Máximo**")
+    st.write(fila["Stock máximo"])
+
+
+with col7:
+    st.write("**Parte Crítica**")
+
+    if str(fila["Parte crítica"]).strip():
+        st.write("SI")
+    else:
+        st.write("NO")
     else:
         st.warning("No se encontraron resultados exactos o similares. Intenta con otra palabra.")
 else:
