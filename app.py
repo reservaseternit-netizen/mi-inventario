@@ -204,7 +204,7 @@ if consulta:
             resultados["orden_texto"] = resultados.index.map(orden_similitud)
             
             resultados = resultados.sort_values(
-                by=["prioridad_dispo", "Libre utilización"] 
+                by=["prioridad_dispo", "Libre utilización"], 
                 ascending=[False, True]
             )
         else:
