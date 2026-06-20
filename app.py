@@ -335,7 +335,7 @@ if consulta:
                                 {fila['Libre utilización']} {fila['Unidad medida base']}
                             </div>
                             """,
-                            unsafe_allow_html=Tru
+                            unsafe_allow_html=True
                         )
                         
                 st.divider()
