@@ -384,5 +384,3 @@ else:
         "Ingrese un código o descripción "
         "para buscar."
     )
-```
-
