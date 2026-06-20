@@ -285,5 +285,5 @@ with col7:
         )
 else:
     st.info(
-        "Ingrese un código o descripción para buscar.")
+        "Ingrese un código o descripción para buscar."
     )
