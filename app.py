@@ -210,7 +210,7 @@ if consulta:
         else:
             # Si fue búsqueda por código numérico, ordenamos solo por disponibilidad y luego por stock
             resultados = resultados.sort_values(
-                by=["prioridad_dispo", "Libre utilización"] 
+                by=["prioridad_dispo", "Libre utilización"],
                 ascending=[False, False]
             )
         # ---------------------------------------------------------
@@ -231,59 +231,68 @@ if consulta:
                 titulo_tarjeta = f"📦 {fila['Texto breve de material']}"
 
             with st.container(border=True):
-                st.markdown(f"### {titulo_tarjeta}")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.write("**Código**")
-                    st.write(fila["Material"])
-                with col2:
-                    st.write("**Ubicación**")
-                    st.write(fila["Ubicación"])
-                with col3:
-                    st.write("**Stock**")
-                    if con_stock:
-                        st.write(
-                            f"**{fila['Libre utilización']} {fila['Unidad medida base']}**"
-                        )
-                    else:
-                        st.markdown(
-                            f"<span style='color:red;'>{fila['Libre utilización']} {fila['Unidad medida base']}</span>",
-                            unsafe_allow_html=True
-                        )
-                        st.divider()
 
+                st.markdown(f"### {titulo_tarjeta}")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.write("**Código**")
+                st.write(fila["Material"])
+
+            with col2:
+                st.write("**Ubicación**")
+                st.write(fila["Ubicación"])
+
+            with col3:
+                st.write("**Stock**")
+
+            if con_stock:
+
+                st.write(
+                    f"**{fila['Libre utilización']} {fila['Unidad medida base']}**"
+                )
+
+            else:
+
+                st.markdown(
+                    f"<span style='color:red;'>{fila['Libre utilización']} {fila['Unidad medida base']}</span>",
+                    unsafe_allow_html=True
+                )
+
+# =========================
+# PARAMETRIZACIÓN
+# =========================
+
+st.divider()
 st.markdown("#### ⚙️ Parametrización")
 
-col4, col5, col6, col7 = st.columns(4)
+
+    col4, col5, col6, col7 = st.columns(4)
 
 
-with col4:
-    st.write("**Planificación**")
-    st.write(fila["Caract.planif.nec."])
+    with col4:
+        st.write("**Planificación**")
+        st.write(fila["Caract.planif.nec."])
 
 
-with col5:
-    st.write("**Punto Pedido**")
-    st.write(fila["Punto de pedido"])
+    with col5:
+        st.write("**Punto Pedido**")
+        st.write(fila["Punto de pedido"])
 
 
-with col6:
-    st.write("**Stock Máximo**")
-    st.write(fila["Stock máximo"])
+    with col6:
+        st.write("**Stock Máximo**")
+        st.write(fila["Stock máximo"])
 
 
-with col7:
-    st.write("**Parte Crítica**")
+    with col7:
+        st.write("**Parte Crítica**")
 
-    if str(fila["Parte crítica"]).strip():
-        st.write("SI")
-    else:
-        st.write("NO")
-    else:
-        st.warning(
-            "No se encontraron resultados exactos o similares. Intenta con otra palabra."
-        )
-else:
-    st.info(
-        "Ingrese un código o descripción para buscar."
-    )
+        if str(fila["Parte crítica"]).strip():
+
+            st.write("SI")
+
+        else:
+
+            st.write("NO")
