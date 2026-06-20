@@ -8,7 +8,7 @@ import base64
 # =====================================================
 st.set_page_config(
     page_title="Consulta Inventario Repuestos",
-    page_icon="📦",
+    page_icon="🛠️",
     layout="centered"
 )
 
@@ -275,7 +275,7 @@ if consulta:
             else:
 
                 titulo_tarjeta = (
-                    f"📦 {fila['Texto breve de material']}"
+                    f"🛠️ {fila['Texto breve de material']}"
                 )
 
             with st.container(border=True):
@@ -341,7 +341,7 @@ if consulta:
                 st.divider()
 
                 st.markdown(
-                    "#### ⚙️ Parametrización"
+                    "#### 📋 Parametrización"
                 )
 
                 col4, col5, col6, col7 = st.columns(4)
