@@ -268,31 +268,31 @@ st.divider()
 st.markdown("#### ⚙️ Parametrización")
 
 
-    col4, col5, col6, col7 = st.columns(4)
+col4, col5, col6, col7 = st.columns(4)
 
 
-    with col4:
-        st.write("**Planificación**")
-        st.write(fila["Caract.planif.nec."])
+with col4:
+    st.write("**Planificación**")
+    st.write(fila["Caract.planif.nec."])
 
 
-    with col5:
-        st.write("**Punto Pedido**")
-        st.write(fila["Punto de pedido"])
+with col5:
+    st.write("**Punto Pedido**")
+    st.write(fila["Punto de pedido"])
 
 
-    with col6:
-        st.write("**Stock Máximo**")
-        st.write(fila["Stock máximo"])
+with col6:
+    st.write("**Stock Máximo**")
+    st.write(fila["Stock máximo"])
 
 
-    with col7:
-        st.write("**Parte Crítica**")
+ with col7:
+    st.write("**Parte Crítica**")
 
-        if str(fila["Parte crítica"]).strip():
+    if str(fila["Parte crítica"]).strip():
 
-            st.write("SI")
+        st.write("SI")
 
-        else:
+    else:
 
-            st.write("NO")
+        st.write("NO")
