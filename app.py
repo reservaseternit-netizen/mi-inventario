@@ -68,14 +68,50 @@ def cargar_datos():
 
         df["Material"] = df["Material"].fillna("").astype(str).str.strip()
         df["Texto breve de material"] = df["Texto breve de material"].fillna("").astype(str).str.strip()
-        df["Ubic."] = df["Ubic."].fillna("No asignada").astype(str).str.strip()
-        df["UMB"] = df["UMB"].fillna("UN").astype(str).str.strip()
+        df["Ubicación"] = (
+            df["Ubicación"]
+            .fillna("No asignada")
+            .astype(str)
+            .str.strip()
+        )
+        
+        df["Unidad medida base"] = (
+            df["Unidad medida base"]
+            .fillna("UN")
+            .astype(str)
+            .str.strip()
+        )
 
-        df["Cantidad stock valorado"] = (
-            pd.to_numeric(df["Cantidad stock valorado"], errors="coerce")
+        df["Libre utilización"] = (
+            pd.to_numeric(df["Libre utilización"], errors="coerce")
             .fillna(0)
             .astype(int)
         )
+
+        df["Caract.planif.nec."] = (
+            df["Caract.planif.nec."]
+            .fillna("")
+            .astype(str)
+             .str.strip()
+        )
+
+        df["Punto de pedido"] = (
+            pd.to_numeric(df["Punto de pedido"], errors="coerce")
+            .fillna(0)
+        )
+
+        df["Stock máximo"] = (
+            pd.to_numeric(df["Stock máximo"], errors="coerce")
+            .fillna(0)   
+        )
+
+        df["Parte crítica"] = (
+            df["Parte crítica"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+
 
         df["search_col"] = (df["Texto breve de material"] + " " + df["Material"]).str.lower()
         return df
@@ -183,7 +219,7 @@ if consulta:
         
         for _, fila in resultados.iterrows():
             # Opcional: Podemos cambiar visualmente las tarjetas que están en cero o sin ubicación
-            con_stock = fila['Cantidad stock valorado'] > 0
+            con_stock = fila['Libre utilización'] > 0
             con_ubic = fila['Ubic.'] != "No asignada"
             
             # Si el repuesto está muerto (sin stock y sin ubicación), le ponemos un aviso sutil
@@ -202,11 +238,11 @@ if consulta:
                     st.write(fila["Material"])
                 with col2:
                     st.write("**Ubicación**")
-                    st.write(fila["Ubic."])
+                    st.write(fila["Ubicación"])
                 with col3:
                     st.write("**Stock**")
                     if con_stock:
-                        st.write(f"**{fila['Cantidad stock valorado']} {fila['UMB']}**")
+                        st.write(f"**{fila["Libre utilización"]} {fila["Unidad medida base"]}**")
                     else:
                         st.write(f"<span style='color:red;'>{fila['Cantidad stock valorado']} {fila['UMB']}</span>", unsafe_allow_html=True)
     else:
