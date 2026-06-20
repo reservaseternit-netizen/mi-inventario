@@ -381,17 +381,6 @@ if consulta:
 
                         st.write("NO")
 
-                if (
-                    fila["Punto de pedido"] > 0
-                    and fila["Libre utilización"]
-                    <= fila["Punto de pedido"]
-                ):
-
-                    st.warning(
-                        "⚠️ Stock igual o inferior "
-                        "al punto de pedido."
-                    )
-
     else:
 
         st.warning(
