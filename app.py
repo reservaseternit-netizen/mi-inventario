@@ -254,7 +254,7 @@ if consulta:
                 ]
             )
 
-        st.caption(
+    st.caption(
             f"Se encontraron {len(resultados)} resultados para "
             f"'{consulta}' (Ordenados por disponibilidad)"
         )
