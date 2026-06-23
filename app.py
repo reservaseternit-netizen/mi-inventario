@@ -220,26 +220,26 @@ if consulta:
 
             resultados["score"] = resultados.index.map(scores)
 
-        resultados["exacto"] = (
-            resultados["Texto breve de material"]
-            .str.lower()
-            .str.contains(
-                consulta_lower,
-                regex=False
+            resultados["exacto"] = (
+                resultados["Texto breve de material"]
+                .str.lower()
+                .str.contains(
+                    consulta_lower,
+                    regex=False
+                )
+                .astype(int)
             )
-            .astype(int)
-        )
 
-        resultados = resultados.sort_values(
-            by=[
-                "exacto",
-                "score"
-            ],
-            ascending=[
-                False,
-                False
-            ]
-        )
+            resultados = resultados.sort_values(
+                by=[
+                    "exacto",
+                    "score"
+                ],
+                ascending=[
+                    False,
+                    False
+                ]
+            )
         
         else:
 
@@ -254,7 +254,7 @@ if consulta:
                 ]
             )
 
-    st.caption(
+        st.caption(
             f"Se encontraron {len(resultados)} resultados para "
             f"'{consulta}' (Ordenados por disponibilidad)"
         )
