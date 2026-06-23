@@ -208,28 +208,39 @@ if consulta:
 
         if not consulta_lower.isdigit():
 
-            orden_similitud = {
-                idx: i
-                for i, idx in enumerate(indices_validos)
-            }
+            scores = {}
 
-            resultados["orden_texto"] = (
-                resultados.index.map(
-                    orden_similitud
-                )
+            for texto_encontrado, score, indice_original in resultados_data:
+
+                if score >= 55:
+
+                    idx = df.index[indice_original]
+
+                    scores[idx] = score
+
+        resultados["score"] = resultados.index.map(scores)
+
+        resultados["exacto"] = (
+            resultados["Texto breve de material"]
+            .str.lower()
+            .str.contains(
+                consulta_lower,
+                regex=False
             )
+            .astype(int)
+        )
 
-            resultados = resultados.sort_values(
-                by=[
-                    "prioridad_dispo",
-                    "orden_texto"
-                ],
-                ascending=[
-                    False,
-                    True
-                ]
-            )
-
+        resultados = resultados.sort_values(
+            by=[
+                "exacto",
+                "score"
+            ],
+            ascending=[
+                False,
+                False
+            ]
+        )
+        
         else:
 
             resultados = resultados.sort_values(
