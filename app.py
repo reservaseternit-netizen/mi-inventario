@@ -218,7 +218,7 @@ if consulta:
 
                     scores[idx] = score
 
-        resultados["score"] = resultados.index.map(scores)
+            resultados["score"] = resultados.index.map(scores)
 
         resultados["exacto"] = (
             resultados["Texto breve de material"]
