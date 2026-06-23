@@ -241,7 +241,7 @@ if consulta:
             ]
         )
         
-    else:
+        else:
 
             resultados = resultados.sort_values(
                 by=[
