@@ -154,67 +154,125 @@ st.divider()
 # =====================================================
 consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip()
 
+```python
 # =====================================================
-# BÚSQUEDA Y RESULTADOS (ORDENADO POR DISPONIBILIDAD)
+# BÚSQUEDA Y RESULTADOS (MEJORADA)
 # =====================================================
 if consulta:
 
     consulta_lower = consulta.lower().strip()
-    palabras = consulta_lower.split()
 
-    # Si es un código numérico directo
+    consulta_normalizada = (
+        consulta_lower
+        .replace("-", " ")
+        .replace("/", " ")
+    )
+
+    palabras = consulta_normalizada.split()
+
+    # -------------------------------------------------
+    # SI ES NUMÉRICO
+    # -------------------------------------------------
     if consulta_lower.isdigit():
 
         resultados = df[
-            df["Material"].str.contains(
-                consulta_lower,
-                na=False
+            (
+                df["Material"]
+                .astype(str)
+                .str.contains(
+                    consulta_lower,
+                    na=False
+                )
             )
             |
-            df["Texto breve de material"].str.contains(
-                consulta_lower,
-                case=False,
-                na=False
+            (
+                df["Texto breve de material"]
+                .astype(str)
+                .str.contains(
+                    consulta_lower,
+                    case=False,
+                    na=False
+                )
             )
         ].copy()
 
+        resultados["score"] = resultados[
+            "Texto breve de material"
+        ].astype(str).str.lower().apply(
+            lambda x: 100 if consulta_lower in x else 0
+        )
+
+    # -------------------------------------------------
+    # SI ES TEXTO
+    # -------------------------------------------------
     else:
+
+        def contar_coincidencias(texto):
+
+            texto = (
+                str(texto)
+                .lower()
+                .replace("-", " ")
+                .replace("/", " ")
+            )
+
+            return sum(
+                palabra in texto
+                for palabra in palabras
+            )
 
         coincidencias_exactas = df[
             df["Texto breve de material"]
+            .astype(str)
             .str.lower()
-            .apply(lambda x: all(p in x for p in palabras))
+            .apply(
+                lambda x:
+                all(
+                    palabra in x.replace("-", " ")
+                    for palabra in palabras
+                )
+            )
         ].copy()
 
         if not coincidencias_exactas.empty:
-            resultados = coincidencias_exactas
-    else:
-        resultados_data = process.extract(
-            consulta_lower,
-            df["search_col"].tolist(),
-            scorer=fuzz.WRatio,
-            limit=40
-        )
 
-        resultados_data = process.extract(
-            consulta_lower,
-            df["search_col"].tolist(),
-            scorer=fuzz.WRatio,
-            limit=40
-        )
+            resultados = coincidencias_exactas.copy()
 
-        indices_validos = []
+            resultados["score"] = resultados[
+                "Texto breve de material"
+            ].apply(contar_coincidencias)
 
-        for texto_encontrado, score, indice_original in resultados_data:
+        else:
 
-            if score >= 55:
+            resultados_data = process.extract(
+                consulta_lower,
+                df["search_col"].tolist(),
+                scorer=fuzz.WRatio,
+                limit=40
+            )
 
-                indices_validos.append(
-                    df.index[indice_original]
-                )
+            indices_validos = []
+            scores = {}
 
-        resultados = df.loc[indices_validos].copy()
+            for texto_encontrado, score, indice_original in resultados_data:
 
+                if score >= 55:
+
+                    idx = df.index[indice_original]
+
+                    indices_validos.append(idx)
+
+                    scores[idx] = score
+
+            resultados = df.loc[indices_validos].copy()
+
+            resultados["score"] = (
+                resultados.index.map(scores)
+            )
+
+    # -------------------------------------------------
+    # ORDENAMIENTO
+    # -------------------------------------------------
     if not resultados.empty:
 
         tiene_ubicacion = (
@@ -229,53 +287,33 @@ if consulta:
             tiene_ubicacion + tiene_stock
         )
 
-        if not consulta_lower.isdigit():
-
-            scores = {}
-
-            for texto_encontrado, score, indice_original in resultados_data:
-
-                if score >= 55:
-
-                    idx = df.index[indice_original]
-
-                    scores[idx] = score
-
-            resultados["score"] = resultados.index.map(scores)
-
-            resultados["exacto"] = (
-                resultados["Texto breve de material"]
-                .str.lower()
-                .str.contains(
-                    consulta_lower,
-                    regex=False
+        resultados["exacto"] = (
+            resultados["Texto breve de material"]
+            .astype(str)
+            .str.lower()
+            .apply(
+                lambda x:
+                all(
+                    palabra in x.replace("-", " ")
+                    for palabra in palabras
                 )
-                .astype(int)
             )
+        ).astype(int)
 
-            resultados = resultados.sort_values(
-                by=[
-                    "exacto",
-                    "score"
-                ],
-                ascending=[
-                    False,
-                    False
-                ]
-            )
-        
-        else:
-
-            resultados = resultados.sort_values(
-                by=[
-                    "prioridad_dispo",
-                    "Libre utilización"
-                ],
-                ascending=[
-                    False,
-                    False
-                ]
-            )
+        resultados = resultados.sort_values(
+            by=[
+                "exacto",
+                "score",
+                "prioridad_dispo",
+                "Libre utilización"
+            ],
+            ascending=[
+                False,
+                False,
+                False,
+                False
+            ]
+        )
 
         st.caption(
             f"Se encontraron {len(resultados)} resultados para "
