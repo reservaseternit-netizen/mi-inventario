@@ -154,7 +154,6 @@ st.divider()
 # =====================================================
 consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip()
 
-```python
 # =====================================================
 # BÚSQUEDA Y RESULTADOS (MEJORADA)
 # =====================================================
