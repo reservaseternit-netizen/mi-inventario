@@ -159,7 +159,8 @@ consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip
 # =====================================================
 if consulta:
 
-    consulta_lower = consulta.lower()
+    consulta_lower = consulta.lower().strip()
+    palabras = consulta_lower.split()
 
     # Si es un código numérico directo
     if consulta_lower.isdigit():
@@ -169,9 +170,31 @@ if consulta:
                 consulta_lower,
                 na=False
             )
+            |
+            df["Texto breve de material"].str.contains(
+                consulta_lower,
+                case=False,
+                na=False
+            )
         ].copy()
 
     else:
+
+        coincidencias_exactas = df[
+            df["Texto breve de material"]
+            .str.lower()
+            .apply(lambda x: all(p in x for p in palabras))
+        ].copy()
+
+        if not coincidencias_exactas.empty:
+            resultados = coincidencias_exactas
+    else:
+        resultados_data = process.extract(
+            consulta_lower,
+            df["search_col"].tolist(),
+            scorer=fuzz.WRatio,
+            limit=40
+        )
 
         resultados_data = process.extract(
             consulta_lower,
