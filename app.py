@@ -19,17 +19,12 @@ def normalizar_texto(texto):
     texto = texto.replace("v", "b")
     texto = texto.replace("-", "")
     # Mantener medidas completas
-    texto = texto.replace("1/4", "1_4")
-    texto = texto.replace("3/8", "3_8")
-    texto = texto.replace("1/2", "1_2")
-    texto = texto.replace("5/8", "5_8")
-    texto = texto.replace("3/4", "3_4")
-
-    texto = texto.replace("1.1/2", "1_5")
-    texto = texto.replace("2.1/2", "2_5")
-    texto = texto.replace("3.1/2", "3_5")
-    texto = texto.replace("4.1/2", "4_5")
-
+    # Mantener cualquier fracción de tornillería
+    texto = re.sub(
+        r'(\d+)/(\d+)',
+        r'\1_\2',
+    texto
+    )
     texto = texto.replace("/", " ")
     texto = texto.replace("cab/hex", "cab hex")
 
@@ -215,13 +210,6 @@ df = cargar_datos()
 if df is None:
     st.stop()
     
-st.write(
-    df[
-        df["Texto breve de material"]
-        .str.contains("TORNILLO CAB/HEX", case=False, na=False)
-    ][["Texto breve de material", "search_col"]]
-)
-
 # =====================================================
 # LOGO
 # =====================================================
