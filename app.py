@@ -17,7 +17,19 @@ def normalizar_texto(texto):
 
     # Normalización básica
     texto = texto.replace("v", "b")
-    texto = texto.replace("-", " ")
+    texto = texto.replace("-", "")
+    # Mantener medidas completas
+    texto = texto.replace("1/4", "1_4")
+    texto = texto.replace("3/8", "3_8")
+    texto = texto.replace("1/2", "1_2")
+    texto = texto.replace("5/8", "5_8")
+    texto = texto.replace("3/4", "3_4")
+
+    texto = texto.replace("1.1/2", "1_5")
+    texto = texto.replace("2.1/2", "2_5")
+    texto = texto.replace("3.1/2", "3_5")
+    texto = texto.replace("4.1/2", "4_5")
+
     texto = texto.replace("/", " ")
     texto = texto.replace("cab/hex", "cab hex")
 
@@ -384,8 +396,11 @@ if consulta:
         # Prioridad por coincidencia de palabras/medidas
         resultados["prioridad_medida"] = resultados["search_col"].apply(
             lambda x: sum(
-                palabra in x
+                10 if "_" in palabra else
+                5 if palabra.isdigit() else
+                1
                 for palabra in palabras
+                if palabra in x
             )
         )
 
