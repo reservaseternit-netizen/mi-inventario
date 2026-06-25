@@ -44,6 +44,12 @@ def normalizar_texto(texto):
     if "esmalte" in texto:
         texto += " pintulux "
 
+    if "BCC" in texto:
+        texto += " BRISTOL "
+        
+    if "BRISTOL" in texto:
+        texto += " BCC "
+
     return texto
     
 # =====================================================
