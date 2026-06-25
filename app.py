@@ -17,6 +17,7 @@ def normalizar_texto(texto):
     texto = texto.replace("v", "b")
     texto = texto.replace("-", "")
     texto = texto.replace("/", " ")
+    texto = texto.replace("cab/hex", "cab hex")
 
     texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
 
@@ -49,6 +50,12 @@ def normalizar_texto(texto):
         
     if "BRISTOL" in texto:
         texto += " BCC "
+
+    if "cab hex" in texto:
+    texto += " hexagonal"
+
+    if "hexagonal" in texto:
+    texto += " cab hex"
 
     return texto
     
