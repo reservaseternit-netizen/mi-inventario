@@ -202,6 +202,13 @@ def cargar_datos():
 df = cargar_datos()
 if df is None:
     st.stop()
+    
+st.write(
+    df[
+        df["Texto breve de material"]
+        .str.contains("TORNILLO CAB/HEX", case=False, na=False)
+    ][["Texto breve de material", "search_col"]]
+)
 
 # =====================================================
 # LOGO
