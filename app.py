@@ -9,11 +9,13 @@ def normalizar_texto(texto):
 
     texto = str(texto).lower()
 
+    # Quitar tildes
     texto = ''.join(
         c for c in unicodedata.normalize('NFD', texto)
         if unicodedata.category(c) != 'Mn'
     )
 
+    # Normalización básica
     texto = texto.replace("v", "b")
     texto = texto.replace("-", "")
     texto = texto.replace("/", " ")
@@ -23,39 +25,51 @@ def normalizar_texto(texto):
 
     texto = " ".join(texto.split())
 
-    # SINÓNIMOS
+    # =====================================================
+    # SINÓNIMOS Y ABREVIATURAS
+    # =====================================================
+
+    # Sensores
     if "inductivo" in texto:
         texto += " induct"
 
     if "induct" in texto:
         texto += " inductivo"
 
-    if "hexagonal" in texto:
-        texto += " hex"
-
-    if "hex" in texto:
-        texto += " hexagonal"
-
-    if "rodamiento" in texto:
-        texto += " rod"
-
-    if "valvula" in texto:
-        texto += " valv"
-    
-    if "esmalte" in texto:
-        texto += " pintulux "
-
-    if "BCC" in texto:
-        texto += " BRISTOL "
-        
-    if "BRISTOL" in texto:
-        texto += " BCC "
-
+    # Tornillería
     if "cab hex" in texto:
         texto += " hexagonal"
 
     if "hexagonal" in texto:
-        texto += " cab hex"
+        texto += " cab hex hex"
+
+    # Rodamientos
+    if "rodamiento" in texto:
+        texto += " rod"
+
+    if "rod" in texto:
+        texto += " rodamiento"
+
+    # Válvulas
+    if "valvula" in texto:
+        texto += " valv"
+
+    if "valv" in texto:
+        texto += " valvula"
+
+    # Pinturas
+    if "esmalte" in texto:
+        texto += " pintura pintulux"
+
+    if "pintura" in texto:
+        texto += " esmalte"
+
+    # Bristol / BCC
+    if "bcc" in texto:
+        texto += " bristol"
+
+    if "bristol" in texto:
+        texto += " bcc"
 
     return texto
     
