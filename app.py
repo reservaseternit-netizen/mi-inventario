@@ -22,12 +22,24 @@ def normalizar_texto(texto):
 
     texto = " ".join(texto.split())
 
-    # Sinónimos y abreviaturas
-    texto = texto.replace("induct", "inductivo")
-    texto = texto.replace("prox", "proximidad")
-    texto = texto.replace("hex", "hexagonal")
-    texto = texto.replace("temp", "temperatura")
-    texto = texto.replace("valv", "valvula")
+    # SINÓNIMOS
+    if "inductivo" in texto:
+        texto += " induct"
+
+    if "induct" in texto:
+        texto += " inductivo"
+
+    if "hexagonal" in texto:
+        texto += " hex"
+
+    if "hex" in texto:
+        texto += " hexagonal"
+
+    if "rodamiento" in texto:
+        texto += " rod"
+
+    if "valvula" in texto:
+        texto += " valv"
 
     return texto
     
