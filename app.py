@@ -40,6 +40,12 @@ def normalizar_texto(texto):
 
     if "valvula" in texto:
         texto += " valv"
+    
+    if "esmalte" in texto:
+        texto += " pintura"
+
+    if "pintura" in texto:
+        texto += " esmalte"
 
     return texto
     
