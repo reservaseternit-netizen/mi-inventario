@@ -44,9 +44,6 @@ def normalizar_texto(texto):
     if "esmalte" in texto:
         texto += " pintura"
 
-    if "pintura" in texto:
-        texto += " esmalte"
-
     return texto
     
 # =====================================================
