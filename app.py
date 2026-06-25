@@ -381,20 +381,35 @@ if consulta:
             )
         ).astype(int)
 
+        # Coincidencia exacta de medidas
+        medidas_busqueda = [
+            p for p in palabras
+            if "_" in p or p.isdigit()
+        ]
+
+        resultados["coincidencia_medida_exacta"] = resultados["search_col"].apply(
+            lambda x: sum(
+                medida in x.split()
+                for medida in medidas_busqueda
+            )
+        )
+
         # Prioridad por coincidencia de palabras/medidas
         resultados["prioridad_medida"] = resultados["search_col"].apply(
             lambda x: sum(
-                10 if "_" in palabra else
+                20 if "_" in palabra else
                 5 if palabra.isdigit() else
                 1
                 for palabra in palabras
-                if palabra in x
+                if palabra in x.split()
             )
         )
 
         resultados = resultados.sort_values(
             by=[
                 "exacto",
+                "exacto",
+                "coincidencia_medida_exacta",
                 "prioridad_medida",
                 "score",
                 "prioridad_dispo",
@@ -405,7 +420,9 @@ if consulta:
                 False,
                 False,
                 False,
+                False,
                 False
+
             ]
         )
 
