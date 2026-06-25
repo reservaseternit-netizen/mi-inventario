@@ -52,10 +52,10 @@ def normalizar_texto(texto):
         texto += " BCC "
 
     if "cab hex" in texto:
-    texto += " hexagonal"
+        texto += " hexagonal"
 
     if "hexagonal" in texto:
-    texto += " cab hex"
+        texto += " cab hex"
 
     return texto
     
