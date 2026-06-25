@@ -9,7 +9,6 @@ def normalizar_texto(texto):
 
     texto = str(texto).lower()
 
-    # quitar tildes
     texto = ''.join(
         c for c in unicodedata.normalize('NFD', texto)
         if unicodedata.category(c) != 'Mn'
