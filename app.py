@@ -151,9 +151,6 @@ def normalizar_texto(texto):
 
     return texto
 
-
-df = cargar_datos()
-
 df = cargar_datos()
 if df is None:
     st.stop()
@@ -256,13 +253,10 @@ if consulta:
             )
 
         coincidencias_exactas = df[
-            df["Texto breve de material"]
-            .astype(str)
-            .str.lower()
-            .apply(
+            df["search_col"].apply(
                 lambda x:
                 all(
-                    palabra in x.replace("-", " ")
+                    palabra in x
                     for palabra in palabras
                 )
             )
@@ -322,9 +316,7 @@ if consulta:
         )
 
         resultados["exacto"] = (
-            resultados["Texto breve de material"]
-            .astype(str)
-            .str.lower()
+            resultados["search_col"]
             .apply(
                 lambda x:
                 all(
