@@ -5,6 +5,26 @@ import base64
 import unicodedata
 import re
 
+def normalizar_texto(texto):
+
+    texto = str(texto).lower()
+
+    # quitar tildes
+    texto = ''.join(
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+    texto = texto.replace("v", "b")
+    texto = texto.replace("-", "")
+    texto = texto.replace("/", " ")
+
+    texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
+
+    texto = " ".join(texto.split())
+
+    return texto
+    
 # =====================================================
 # CONFIGURACIÓN GENERAL
 # =====================================================
@@ -130,27 +150,7 @@ def cargar_datos():
     except Exception as e:
         st.error(f"Error cargando Excel: {e}")
         return None
-
-def normalizar_texto(texto):
-
-    texto = str(texto).lower()
-
-    # quitar tildes
-    texto = ''.join(
-        c for c in unicodedata.normalize('NFD', texto)
-        if unicodedata.category(c) != 'Mn'
-    )
-
-    texto = texto.replace("v", "b")
-    texto = texto.replace("-", "")
-    texto = texto.replace("/", " ")
-
-    texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
-
-    texto = " ".join(texto.split())
-
-    return texto
-
+        
 df = cargar_datos()
 if df is None:
     st.stop()
