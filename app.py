@@ -408,7 +408,6 @@ if consulta:
         resultados = resultados.sort_values(
             by=[
                 "exacto",
-                "exacto",
                 "coincidencia_medida_exacta",
                 "prioridad_medida",
                 "score",
