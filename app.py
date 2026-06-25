@@ -42,7 +42,7 @@ def normalizar_texto(texto):
         texto += " valv"
     
     if "esmalte" in texto:
-        texto += " pintura"
+        texto += " pintulux "
 
     return texto
     
