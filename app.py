@@ -374,9 +374,18 @@ if consulta:
             )
         ).astype(int)
 
+        # Prioridad por coincidencia de palabras/medidas
+        resultados["prioridad_medida"] = resultados["search_col"].apply(
+            lambda x: sum(
+                palabra in x
+                for palabra in palabras
+            )
+        )
+
         resultados = resultados.sort_values(
             by=[
                 "exacto",
+                "prioridad_medida",
                 "score",
                 "prioridad_dispo",
                 "Libre utilización"
