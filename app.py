@@ -22,6 +22,13 @@ def normalizar_texto(texto):
 
     texto = " ".join(texto.split())
 
+    # Sinónimos y abreviaturas
+    texto = texto.replace("induct", "inductivo")
+    texto = texto.replace("prox", "proximidad")
+    texto = texto.replace("hex", "hexagonal")
+    texto = texto.replace("temp", "temperatura")
+    texto = texto.replace("valv", "valvula")
+
     return texto
     
 # =====================================================
