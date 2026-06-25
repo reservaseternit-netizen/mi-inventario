@@ -17,7 +17,7 @@ def normalizar_texto(texto):
 
     # Normalización básica
     texto = texto.replace("v", "b")
-    texto = texto.replace("-", "")
+    texto = texto.replace("-", " ")
     texto = texto.replace("/", " ")
     texto = texto.replace("cab/hex", "cab hex")
 
@@ -391,6 +391,7 @@ if consulta:
                 "Libre utilización"
             ],
             ascending=[
+                False,
                 False,
                 False,
                 False,
