@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from rapidfuzz import process, fuzz
 import base64
+import unicodedata
+import re
 
 # =====================================================
 # CONFIGURACIÓN GENERAL
@@ -113,7 +115,17 @@ def cargar_datos():
         )
 
 
-        df["search_col"] = (df["Texto breve de material"] + " " + df["Material"]).str.lower()
+        df["search_col"] = (
+            df["Texto breve de material"]
+            .fillna("")
+            .apply(normalizar_texto)
+            + " "
+            + df["Material"]
+            .fillna("")
+            .astype(str)
+            .apply(normalizar_texto)
+        )
+        
         return df
     except Exception as e:
         st.error(f"Error cargando Excel: {e}")
