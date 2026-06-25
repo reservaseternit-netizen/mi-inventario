@@ -171,7 +171,7 @@ consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip
 # =====================================================
 if consulta:
 
-    consulta_lower = consulta.lower().strip()
+    consulta_lower = normalizar_texto(consulta)
 
     consulta_normalizada = (
         consulta_lower
