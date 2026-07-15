@@ -314,7 +314,7 @@ if consulta or filtro_ubicacion != "Todas":
             )
             |
         (
-            df["Texto breve de material"]
+            df_busqueda["Texto breve de material"]
                 .astype(str)
                 .str.contains(
                     consulta_lower,
@@ -333,9 +333,9 @@ if consulta or filtro_ubicacion != "Todas":
     # -------------------------------------------------
     # SI ES TEXTO
     # -------------------------------------------------
-    else:
-
-        def contar_coincidencias(texto):
+else:
+        
+    def contar_coincidencias(texto):
 
             texto = (
                 str(texto)
@@ -350,7 +350,7 @@ if consulta or filtro_ubicacion != "Todas":
             )
 
     coincidencias_exactas = df_busqueda[
-        df["search_col"].apply(
+        df_busqueda["search_col"].apply(
                 lambda x:
                 all(
                     palabra in x
