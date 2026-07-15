@@ -265,7 +265,17 @@ with col2:
 # =====================================================
 # BÚSQUEDA Y RESULTADOS (MEJORADA)
 # =====================================================
-if consulta:
+if consulta or filtro_ubicacion != "Todas":
+
+     # Filtrar primero por ubicación
+    df_busqueda = df.copy()
+
+    if filtro_ubicacion != "Todas":
+        df_busqueda = df_busqueda[
+            df_busqueda["Ubicación"]
+            .astype(str)
+            .str.startswith(filtro_ubicacion)
+        ]
 
     consulta_lower = normalizar_texto(consulta)
 
@@ -282,7 +292,7 @@ if consulta:
     # -------------------------------------------------
     if consulta_lower.isdigit():
 
-        resultados = df[
+        resultados = df_busqueda[
             (
                 df["Material"]
                 .astype(str)
@@ -328,7 +338,7 @@ if consulta:
                 for palabra in palabras
             )
 
-        coincidencias_exactas = df[
+        coincidencias_exactas = df_busqueda[
             df["search_col"].apply(
                 lambda x:
                 all(
@@ -350,7 +360,7 @@ if consulta:
 
             resultados_data = process.extract(
                 consulta_lower,
-                df["search_col"].tolist(),
+                df_busqueda["search_col"].tolist()
                 scorer=fuzz.WRatio,
                 limit=40
             )
@@ -362,13 +372,13 @@ if consulta:
 
                 if score >= 55:
 
-                    idx = df.index[indice_original]
+                    idx = df_busqueda.index[indice_original]
 
                     indices_validos.append(idx)
 
                     scores[idx] = score
 
-            resultados = df.loc[indices_validos].copy()
+            resultados = df_busqueda.loc[indices_validos].copy()
 
             resultados["score"] = (
                 resultados.index.map(scores)
@@ -377,14 +387,7 @@ if consulta:
     # -------------------------------------------------
     # ORDENAMIENTO
     # -------------------------------------------------
-    # Filtrar por ubicación
-    if filtro_ubicacion != "Todas":
-        resultados = resultados[
-            resultados["Ubicación"]
-            .astype(str)
-            .str.startswith(filtro_ubicacion)
-        ]
-    
+   
     if not resultados.empty:
 
         tiene_ubicacion = (
