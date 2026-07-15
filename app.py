@@ -239,7 +239,28 @@ st.divider()
 # =====================================================
 # FILTRO
 # =====================================================
-consulta = st.text_input("🔍 Buscar", placeholder="Ej: Rodamiento 6205").strip()
+col1, col2 = st.columns([4,1])
+
+with col1:
+    consulta = st.text_input(
+        "🔍 Buscar descripción",
+        placeholder="Ej: Rodamiento 6205"
+    ).strip()
+
+with col2:
+
+    letras = sorted(
+        df["Ubicación"]
+        .astype(str)
+        .str[0]
+        .dropna()
+        .unique()
+    )
+
+    filtro_ubicacion = st.selectbox(
+        "📍 Ubicación",
+        ["Todas"] + letras
+    )
 
 # =====================================================
 # BÚSQUEDA Y RESULTADOS (MEJORADA)
@@ -356,6 +377,14 @@ if consulta:
     # -------------------------------------------------
     # ORDENAMIENTO
     # -------------------------------------------------
+    # Filtrar por ubicación
+    if filtro_ubicacion != "Todas":
+        resultados = resultados[
+            resultados["Ubicación"]
+            .astype(str)
+            .str.startswith(filtro_ubicacion)
+        ]
+    
     if not resultados.empty:
 
         tiene_ubicacion = (
