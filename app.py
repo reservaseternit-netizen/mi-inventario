@@ -333,9 +333,9 @@ if consulta or filtro_ubicacion != "Todas":
     # -------------------------------------------------
     # SI ES TEXTO
     # -------------------------------------------------
-else:
-        
-    def contar_coincidencias(texto):
+    else:
+
+        def contar_coincidencias(texto):
 
             texto = (
                 str(texto)
@@ -349,10 +349,9 @@ else:
                 for palabra in palabras
             )
 
-    coincidencias_exactas = df_busqueda[
-        df_busqueda["search_col"].apply(
-                lambda x:
-                all(
+        coincidencias_exactas = df_busqueda[
+            df_busqueda["search_col"].apply(
+                lambda x: all(
                     palabra in x
                     for palabra in palabras
                 )
@@ -391,9 +390,7 @@ else:
 
             resultados = df_busqueda.loc[indices_validos].copy()
 
-            resultados["score"] = (
-                resultados.index.map(scores)
-            )
+            resultados["score"] = resultados.index.map(scores)
 
     # -------------------------------------------------
     # ORDENAMIENTO
