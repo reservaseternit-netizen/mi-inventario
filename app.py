@@ -471,19 +471,19 @@ if consulta or filtro_ubicacion != "Todas":
 
         if orden == "Ubicación (Menor a Mayor)":
 
-        resultados["Letra"] = resultados["Ubicación"].str.extract(r"^([A-Za-z]+)")
-    
-        resultados["Numero"] = pd.to_numeric(
-            resultados["Ubicación"].str.extract(r"(\d+)")[0],
-            errors="coerce"
-        )
-    
-        resultados["Sufijo"] = resultados["Ubicación"].str.extract(r"\d+([A-Za-z]*)$")[0].fillna("")
-    
-        resultados = resultados.sort_values(
-            by=["Letra", "Numero", "Sufijo"],
-            ascending=[True, True, True]
-        )
+            resultados["Letra"] = resultados["Ubicación"].str.extract(r"^([A-Za-z]+)")
+        
+            resultados["Numero"] = pd.to_numeric(
+                resultados["Ubicación"].str.extract(r"(\d+)")[0],
+                errors="coerce"
+            )
+        
+            resultados["Sufijo"] = resultados["Ubicación"].str.extract(r"\d+([A-Za-z]*)$")[0].fillna("")
+        
+            resultados = resultados.sort_values(
+                by=["Letra", "Numero", "Sufijo"],
+                ascending=[True, True, True]
+            )
 
         elif orden == "Descripción (A-Z)":
 
