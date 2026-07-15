@@ -262,7 +262,7 @@ with col2:
         ["Todas"] + letras
     )
 
-    with col3:
+with col3:
 
     orden = st.selectbox(
         "↕ Orden",
@@ -304,8 +304,8 @@ if consulta or filtro_ubicacion != "Todas":
     if consulta_lower.isdigit():
 
         resultados = df_busqueda[
-            (
-                df["Material"]
+        (
+            df_busqueda["Material"]
                 .astype(str)
                 .str.contains(
                     consulta_lower,
@@ -313,8 +313,8 @@ if consulta or filtro_ubicacion != "Todas":
                 )
             )
             |
-            (
-                df["Texto breve de material"]
+        (
+            df["Texto breve de material"]
                 .astype(str)
                 .str.contains(
                     consulta_lower,
@@ -349,8 +349,8 @@ if consulta or filtro_ubicacion != "Todas":
                 for palabra in palabras
             )
 
-        coincidencias_exactas = df_busqueda[
-            df["search_col"].apply(
+    coincidencias_exactas = df_busqueda[
+        df["search_col"].apply(
                 lambda x:
                 all(
                     palabra in x
