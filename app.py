@@ -360,7 +360,7 @@ if consulta or filtro_ubicacion != "Todas":
 
             resultados_data = process.extract(
                 consulta_lower,
-                df_busqueda["search_col"].tolist()
+                df_busqueda["search_col"].tolist(),
                 scorer=fuzz.WRatio,
                 limit=40
             )
