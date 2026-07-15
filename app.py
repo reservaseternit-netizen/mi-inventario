@@ -239,7 +239,7 @@ st.divider()
 # =====================================================
 # FILTRO
 # =====================================================
-col1, col2 = st.columns([4,1])
+col1, col2, col3 = st.columns([4,1,2])
 
 with col1:
     consulta = st.text_input(
@@ -260,6 +260,17 @@ with col2:
     filtro_ubicacion = st.selectbox(
         "📍 Ubicación",
         ["Todas"] + letras
+    )
+
+    with col3:
+
+    orden = st.selectbox(
+        "↕ Orden",
+        [
+            "Relevancia",
+            "Ubicación (Menor a Mayor)",
+            "Descripción (A-Z)"
+        ]
     )
 
 # =====================================================
@@ -456,6 +467,30 @@ if consulta or filtro_ubicacion != "Todas":
 
             ]
         )
+
+        # ==========================================
+        # ORDEN PERSONALIZADO
+        # ==========================================
+
+        if orden == "Ubicación (Menor a Mayor)":
+
+            resultados["Ubicación_num"] = pd.to_numeric(
+                resultados["Ubicación"],
+                errors="coerce"
+            )
+
+            resultados = resultados.sort_values(
+                by="Ubicación_num",
+                ascending=True,
+                na_position="last"
+            )
+
+        elif orden == "Descripción (A-Z)":
+
+            resultados = resultados.sort_values(
+                by="Texto breve de material",
+                ascending=True
+            )
 
         st.caption(
             f"Se encontraron {len(resultados)} resultados para "
