@@ -116,14 +116,7 @@ st.markdown("""
 }
 
 /* Título en NEGRO y más pegado arriba */
-.bienvenida {
-    text-align: center;
-    color: #E30613;
-    font-size: 28px;
-    font-weight: 700;
-    margin-top: 10px;
-    margin-bottom: 8px;
- }
+.titulo {
     text-align: center;
     color: #000000; /* Color Negro */
     font-size: 32px;
@@ -144,6 +137,7 @@ st.markdown("""
 # =====================================================
 # CARGA DE DATOS
 # =====================================================
+
 @st.cache_data
 def cargar_datos():
     try:
