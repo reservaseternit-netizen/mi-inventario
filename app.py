@@ -231,7 +231,7 @@ except Exception as e:
 # =====================================================
 # TÍTULOS (AHORA MÁS PEGADOS Y EN NEGRO)
 # =====================================================
-st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
+st.markdown("<div class='titulo'>✨ ¡Holis! El repuesto que necesitas está a un clic. ¡Consulta el inventario! 📦</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitulo'>Busque por código, descripción o medida</div>", unsafe_allow_html=True)
 
 st.divider()
