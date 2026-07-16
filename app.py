@@ -116,7 +116,14 @@ st.markdown("""
 }
 
 /* Título en NEGRO y más pegado arriba */
-.titulo {
+.bienvenida {
+    text-align: center;
+    color: #E30613;
+    font-size: 28px;
+    font-weight: 700;
+    margin-top: 10px;
+    margin-bottom: 8px;
+ }
     text-align: center;
     color: #000000; /* Color Negro */
     font-size: 32px;
@@ -231,7 +238,10 @@ except Exception as e:
 # =====================================================
 # TÍTULOS (AHORA MÁS PEGADOS Y EN NEGRO)
 # =====================================================
-st.markdown("<div class='titulo'> ¡Bienvenidos!                  Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
+st.markdown("<div class='bienvenida'>¡Bienvenidos! 👋</div>", unsafe_allow_html=True)
+
+st.markdown("<div class='titulo'>Consulta de Inventario<br>Almacén de Repuestos</div>", unsafe_allow_html=True)
+
 st.markdown("<div class='subtitulo'>Buscar por código o descripción del material</div>", unsafe_allow_html=True)
 
 st.divider()
