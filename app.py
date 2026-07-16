@@ -290,7 +290,7 @@ if consulta or filtro_ubicacion != "Todas":
             resultados = coincidencias_exactas
             resultados["score"] = resultados["Texto breve de material"].apply(contar_coincidencias)
         else:
-            # OPTIMIZACIÓN: RapidFuzz con processor=None (ya que pre-normalizamos todo)
+            # RapidFuzz con processor=None
             lista_busqueda = df_busqueda["search_col"].tolist()
             resultados_data = process.extract(
                 consulta_lower,
@@ -370,7 +370,7 @@ if consulta or filtro_ubicacion != "Todas":
                 ascending=True
             )
 
-        # OPTIMIZACIÓN: Limitar el renderizado a las mejores 20 coincidencias para evitar lag de interfaz
+        # Limitar el renderizado a las mejores 20 coincidencias para evitar lag de interfaz
         total_encontrados = len(resultados)
         resultados_visibles = resultados.head(20)
 
@@ -417,7 +417,6 @@ if consulta or filtro_ubicacion != "Todas":
             ">
                 <h3 style="margin-top: 0; margin-bottom: 14px; color: #333; font-size: 1.15rem;">{titulo_tarjeta}</h3>
                 
-                <!-- Fila Principal (3 Columnas) -->
                 <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px; gap: 10px;">
                     <div style="flex: 1; min-width: 140px;">
                         <span style="color: #666; font-size: 0.85rem; font-weight: bold;">CÓDIGO</span><br>
@@ -447,7 +446,6 @@ if consulta or filtro_ubicacion != "Todas":
                 
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
                 
-                <!-- Fila Parametrización (4 Columnas) -->
                 <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #444;">📋 Parametrización</h4>
                 <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 0.85rem; color: #555;">
                     <div style="flex: 1; min-width: 100px;">
@@ -467,8 +465,8 @@ if consulta or filtro_ubicacion != "Todas":
             """
             html_buffer.append(card_html)
 
-        # Renderizar todo el set de tarjetas de un solo golpe
-        st.markdown("\n".join(html_buffer), unsafe_allow_html=True)
+        # Renderizar todo el set de tarjetas de un solo golpe indicando explícitamente HTML
+        st.write("\n".join(html_buffer), unsafe_allow_html=True)
 
     else:
         st.warning("No se encontraron resultados exactos o similares.")
