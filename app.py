@@ -404,7 +404,7 @@ if consulta or filtro_ubicacion != "Todas":
 
             critica_badge = '<span style="color:#2e7d32; font-weight:bold;">SÍ</span>' if str(fila["Parte crítica"]).strip() else '<span>NO</span>'
 
-            # Estructurar la tarjeta en HTML puro (Adiós a st.columns lentos)
+            # Estructurar la tarjeta en HTML puro
             card_html = f"""
             <div style="
                 border: 1px solid #e0e0e0;
@@ -465,8 +465,8 @@ if consulta or filtro_ubicacion != "Todas":
             """
             html_buffer.append(card_html)
 
-        # Renderizar todo el set de tarjetas de un solo golpe indicando explícitamente HTML
-        st.write("\n".join(html_buffer), unsafe_allow_html=True)
+        # RENDERIZADO ULTRA-RÁPIDO CON LA FUNCIÓN CORRECTA
+        st.markdown("\n".join(html_buffer), unsafe_allow_html=True)
 
     else:
         st.warning("No se encontraron resultados exactos o similares.")
