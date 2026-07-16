@@ -34,7 +34,6 @@ def normalizar_texto(texto):
     # =====================================================
     # SINÓNIMOS Y ABREVIATURAS
     # =====================================================
-    # Se añade espacio al final para búsquedas exactas limpias
     if "inductivo" in texto:
         texto += " induct"
     elif "induct" in texto:
@@ -171,17 +170,28 @@ def cargar_datos():
             .str.strip()
         )
 
-        # Vectorización de la columna de búsqueda para acelerar la carga inicial
+        # OPTIMIZACIÓN: Precalcular la primera letra de la ubicación
+        df["Ubicacion_Letra"] = df["Ubicación"].str[0].fillna("")
+
+        # OPTIMIZACIÓN: Precalcular las letras únicas para el selectbox de forma cacheada
+        letras_unicas = sorted(
+            df["Ubicacion_Letra"]
+            .unique()
+        )
+        # Limpiar vacíos de la lista de letras
+        letras_unicas = [l for l in letras_unicas if l.strip() != ""]
+
+        # Vectorización de la columna de búsqueda
         df["search_col"] = (
             df["Texto breve de material"].apply(normalizar_texto)
             + " "
             + df["Material"].apply(normalizar_texto)
         )
         
-        return df
+        return df, letras_unicas
     except Exception as e:
         st.error(f"Error cargando Excel: {e}")
-        return None
+        return None, []
 
 # =====================================================
 # CARGA DE LOGO EN CACHÉ (Evita lecturas de disco repetidas)
@@ -194,11 +204,11 @@ def cargar_logo_base64(ruta_imagen):
     except Exception:
         return None
 
-df = cargar_datos()
+df, letras = cargar_datos()
 if df is None:
     st.stop()
 
-# Renderizar Logo si existe
+# Renderizar Logo
 encoded_logo = cargar_logo_base64("logo.png")
 if encoded_logo:
     st.markdown(
@@ -209,8 +219,6 @@ if encoded_logo:
         """,
         unsafe_allow_html=True
     )
-else:
-    st.warning("No se pudo encontrar o cargar 'logo.png'.")
 
 # =====================================================
 # TÍTULOS
@@ -219,7 +227,7 @@ st.markdown("<div class='titulo'>El repuesto que necesitas está a un clic. ¡Co
 st.divider()
 
 # =====================================================
-# FILTROS
+# FILTROS (MÁXIMA VELOCIDAD)
 # =====================================================
 col1, col2, col3 = st.columns([4, 1, 2])
 
@@ -230,15 +238,7 @@ with col1:
     ).strip()
 
 with col2:
-    # Obtener letras únicas para la ubicación de manera óptima
-    letras = sorted(
-        df["Ubicación"]
-        .astype(str)
-        .str[0]
-        .dropna()
-        .unique()
-    )
-
+    # Usamos la lista de letras 'letras' precalculada y guardada en caché
     filtro_ubicacion = st.selectbox(
         "📍 Ubicación",
         ["Todas"] + letras
@@ -259,10 +259,10 @@ with col3:
 # =====================================================
 if consulta or filtro_ubicacion != "Todas":
 
-    # Filtrar primero por ubicación para reducir el espacio de búsqueda
+    # OPTIMIZACIÓN: Filtro ultra rápido por igualdad de primera letra precalculada
     df_busqueda = df
     if filtro_ubicacion != "Todas":
-        df_busqueda = df[df["Ubicación"].astype(str).str.startswith(filtro_ubicacion)]
+        df_busqueda = df[df["Ubicacion_Letra"] == filtro_ubicacion]
 
     consulta_lower = normalizar_texto(consulta)
     consulta_normalizada = consulta_lower.replace("-", " ").replace("/", " ")
@@ -277,7 +277,6 @@ if consulta or filtro_ubicacion != "Todas":
         
         resultados = df_busqueda[cond_material | cond_texto].copy()
         
-        # Asignar Score vectorizado
         resultados["score"] = resultados["Texto breve de material"].astype(str).str.lower().apply(
             lambda x: 100 if consulta_lower in x else 0
         )
@@ -290,8 +289,7 @@ if consulta or filtro_ubicacion != "Todas":
             texto_clean = str(texto).lower().replace("-", " ").replace("/", " ")
             return sum(palabra in texto_clean for palabra in palabras)
 
-        # Filtro de coincidencia de palabras exacta (Todas las palabras deben existir)
-        # Optimizamos con una list comprehension rápida sobre search_col
+        # Filtro de coincidencia de palabras exacta súper optimizado
         search_vals = df_busqueda["search_col"].values
         indices_exactos = [
             i for i, val in enumerate(search_vals)
@@ -303,7 +301,7 @@ if consulta or filtro_ubicacion != "Todas":
             resultados = coincidencias_exactas
             resultados["score"] = resultados["Texto breve de material"].apply(contar_coincidencias)
         else:
-            # Si no hay coincidencias exactas, recurrir al Fuzzy Matching usando RapidFuzz (limitado a 40)
+            # Si no hay coincidencias exactas, recurrir al Fuzzy Matching limitado
             lista_busqueda = df_busqueda["search_col"].tolist()
             resultados_data = process.extract(
                 consulta_lower,
@@ -327,20 +325,17 @@ if consulta or filtro_ubicacion != "Todas":
     # PROCESAMIENTO DE CRITERIOS DE ORDENAMIENTO Y RENDERS
     # -------------------------------------------------
     if not resultados.empty:
-        # Precalcular booleanos de stock y ubicación de forma vectorizada
         tiene_ubicacion = (resultados["Ubicación"] != "No asignada").astype(int)
         tiene_stock = (resultados["Libre utilización"] > 0).astype(int)
         resultados["prioridad_dispo"] = tiene_ubicacion + tiene_stock
 
         search_col_vals = resultados["search_col"].values
         
-        # Precalcular columna "exacto" sin llamadas pesadas
         resultados["exacto"] = [
             int(all(p in x.replace("-", " ") for p in palabras)) 
             for x in search_col_vals
         ]
 
-        # Prioridad y coincidencias de medidas
         medidas_busqueda = [p for p in palabras if "_" in p or p.isdigit()]
         
         resultados["coincidencia_medida_exacta"] = [
@@ -354,7 +349,6 @@ if consulta or filtro_ubicacion != "Todas":
             for x in search_col_vals
         ]
 
-        # Orden por relevancia por defecto
         resultados = resultados.sort_values(
             by=[
                 "exacto",
@@ -367,7 +361,6 @@ if consulta or filtro_ubicacion != "Todas":
             ascending=[False, False, False, False, False, False]
         )
 
-        # Aplicar ordenamientos personalizados si aplica
         if orden == "Ubicación (Menor a Mayor)":
             resultados["Letra"] = resultados["Ubicación"].str.extract(r"^([A-Za-z]+)")
             resultados["Numero"] = pd.to_numeric(
