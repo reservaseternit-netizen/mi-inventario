@@ -231,6 +231,7 @@ except Exception as e:
 # =====================================================
 # TÍTULOS (AHORA MÁS PEGADOS Y EN NEGRO)
 # =====================================================
+st.markdown("<div class='titulo'>BIENBENIDOS :) </div>", unsafe_allow_html=True)
 st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitulo'>Buscar por código o descripción del material</div>", unsafe_allow_html=True)
 
