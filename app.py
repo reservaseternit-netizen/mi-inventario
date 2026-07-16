@@ -137,7 +137,6 @@ st.markdown("""
 # =====================================================
 # CARGA DE DATOS
 # =====================================================
-
 @st.cache_data
 def cargar_datos():
     try:
@@ -232,17 +231,15 @@ except Exception as e:
 # =====================================================
 # TÍTULOS (AHORA MÁS PEGADOS Y EN NEGRO)
 # =====================================================
-st.markdown("<div class='bienvenida'>¡Bienvenidos! 👋</div>", unsafe_allow_html=True)
-
-st.markdown("<div class='titulo'>Consulta de Inventario<br>Almacén de Repuestos</div>", unsafe_allow_html=True)
-
-st.markdown("<div class='subtitulo'>Buscar por código o descripción del material</div>", unsafe_allow_html=True)
+st.markdown("<div class='titulo'>Consulta de Inventario Almacén Repuestos</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitulo'>Busque por código, descripción o medida</div>", unsafe_allow_html=True)
 
 st.divider()
 
 # =====================================================
 # FILTRO
 # =====================================================
+
 col1, col2, col3 = st.columns([4,1,2])
 
 with col1:
