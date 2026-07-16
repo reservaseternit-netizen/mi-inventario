@@ -76,7 +76,7 @@ st.set_page_config(
 )
 
 # =====================================================
-# ESTILOS CSS
+# ESTILOS CSS (Mejorados y unificados)
 # =====================================================
 st.markdown("""
 <style>
@@ -104,12 +104,6 @@ st.markdown("""
     font-weight: 800;
     margin-top: 0px;
     margin-bottom: 5px;
-}
-.subtitulo {
-    text-align: center;
-    color: #666;
-    font-size: 16px;
-    margin-bottom: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -170,18 +164,14 @@ def cargar_datos():
             .str.strip()
         )
 
-        # OPTIMIZACIÓN: Precalcular la primera letra de la ubicación
+        # Precalcular la primera letra de la ubicación (Para el filtro ultra rápido)
         df["Ubicacion_Letra"] = df["Ubicación"].str[0].fillna("")
 
-        # OPTIMIZACIÓN: Precalcular las letras únicas para el selectbox de forma cacheada
-        letras_unicas = sorted(
-            df["Ubicacion_Letra"]
-            .unique()
-        )
-        # Limpiar vacíos de la lista de letras
+        # Precalcular las letras únicas para el selectbox
+        letras_unicas = sorted(df["Ubicacion_Letra"].unique())
         letras_unicas = [l for l in letras_unicas if l.strip() != ""]
 
-        # Vectorización de la columna de búsqueda
+        # Vectorización e indexación de la columna de búsqueda
         df["search_col"] = (
             df["Texto breve de material"].apply(normalizar_texto)
             + " "
@@ -194,7 +184,7 @@ def cargar_datos():
         return None, []
 
 # =====================================================
-# CARGA DE LOGO EN CACHÉ (Evita lecturas de disco repetidas)
+# CARGA DE LOGO EN CACHÉ
 # =====================================================
 @st.cache_data
 def cargar_logo_base64(ruta_imagen):
@@ -227,7 +217,7 @@ st.markdown("<div class='titulo'>El repuesto que necesitas está a un clic. ¡Co
 st.divider()
 
 # =====================================================
-# FILTROS (MÁXIMA VELOCIDAD)
+# FILTROS
 # =====================================================
 col1, col2, col3 = st.columns([4, 1, 2])
 
@@ -238,7 +228,6 @@ with col1:
     ).strip()
 
 with col2:
-    # Usamos la lista de letras 'letras' precalculada y guardada en caché
     filtro_ubicacion = st.selectbox(
         "📍 Ubicación",
         ["Todas"] + letras
@@ -259,7 +248,7 @@ with col3:
 # =====================================================
 if consulta or filtro_ubicacion != "Todas":
 
-    # OPTIMIZACIÓN: Filtro ultra rápido por igualdad de primera letra precalculada
+    # Filtro indexado por ubicación inmediato
     df_busqueda = df
     if filtro_ubicacion != "Todas":
         df_busqueda = df[df["Ubicacion_Letra"] == filtro_ubicacion]
@@ -289,7 +278,7 @@ if consulta or filtro_ubicacion != "Todas":
             texto_clean = str(texto).lower().replace("-", " ").replace("/", " ")
             return sum(palabra in texto_clean for palabra in palabras)
 
-        # Filtro de coincidencia de palabras exacta súper optimizado
+        # Filtro de coincidencia de palabras exacta (súper veloz)
         search_vals = df_busqueda["search_col"].values
         indices_exactos = [
             i for i, val in enumerate(search_vals)
@@ -301,28 +290,29 @@ if consulta or filtro_ubicacion != "Todas":
             resultados = coincidencias_exactas
             resultados["score"] = resultados["Texto breve de material"].apply(contar_coincidencias)
         else:
-            # Si no hay coincidencias exactas, recurrir al Fuzzy Matching limitado
+            # OPTIMIZACIÓN: RapidFuzz con processor=None (ya que pre-normalizamos todo)
             lista_busqueda = df_busqueda["search_col"].tolist()
             resultados_data = process.extract(
                 consulta_lower,
                 lista_busqueda,
                 scorer=fuzz.WRatio,
-                limit=40
+                processor=None,
+                limit=40,
+                score_cutoff=55
             )
 
             indices_validos = []
             scores = {}
             for texto_encontrado, score, indice_original in resultados_data:
-                if score >= 55:
-                    idx = df_busqueda.index[indice_original]
-                    indices_validos.append(idx)
-                    scores[idx] = score
+                idx = df_busqueda.index[indice_original]
+                indices_validos.append(idx)
+                scores[idx] = score
 
             resultados = df_busqueda.loc[indices_validos].copy()
             resultados["score"] = resultados.index.map(scores)
 
     # -------------------------------------------------
-    # PROCESAMIENTO DE CRITERIOS DE ORDENAMIENTO Y RENDERS
+    # PROCESAMIENTO DE CRITERIOS DE ORDENAMIENTO
     # -------------------------------------------------
     if not resultados.empty:
         tiene_ubicacion = (resultados["Ubicación"] != "No asignada").astype(int)
@@ -380,94 +370,106 @@ if consulta or filtro_ubicacion != "Todas":
                 ascending=True
             )
 
+        # OPTIMIZACIÓN: Limitar el renderizado a las mejores 20 coincidencias para evitar lag de interfaz
+        total_encontrados = len(resultados)
+        resultados_visibles = resultados.head(20)
+
         st.caption(
-            f"Se encontraron {len(resultados)} resultados para "
-            f"'{consulta}' (Ordenados por disponibilidad)"
+            f"Se encontraron {total_encontrados} resultados. "
+            f"Mostrando los mejores {len(resultados_visibles)} (Ordenados por disponibilidad)."
         )
 
-        # Renderizado de Tarjetas
-        for _, fila in resultados.iterrows():
+        # -------------------------------------------------
+        # RENDERIZADO ULTRA-RÁPIDO EN UN SOLO BLOQUE HTML
+        # -------------------------------------------------
+        html_buffer = []
+
+        for _, fila in resultados_visibles.iterrows():
             con_stock = fila["Libre utilización"] > 0
             con_ubic = fila["Ubicación"] != "No asignada"
 
+            # Determinar título y colores de tarjeta
             if not con_stock and not con_ubic:
                 titulo_tarjeta = f"⚠️ {fila['Texto breve de material']} (Código Sin Movimiento)"
+                stock_bg = "#ffebee"
+                stock_color = "#c62828"
             elif not con_stock:
                 titulo_tarjeta = f"🔴 {fila['Texto breve de material']} (Sin Existencias)"
+                stock_bg = "#ffebee"
+                stock_color = "#c62828"
             else:
                 titulo_tarjeta = f"⚙️ {fila['Texto breve de material']}"
+                stock_bg = "#e8f5e9"
+                stock_color = "#1b5e20"
 
-            with st.container(border=True):
-                st.markdown(f"### {titulo_tarjeta}")
+            critica_badge = '<span style="color:#2e7d32; font-weight:bold;">SÍ</span>' if str(fila["Parte crítica"]).strip() else '<span>NO</span>'
 
-                col_c1, col_c2, col_c3 = st.columns(3)
-                with col_c1:
-                    st.write("**Código**")
-                    st.write(fila["Material"])
+            # Estructurar la tarjeta en HTML puro (Adiós a st.columns lentos)
+            card_html = f"""
+            <div style="
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                padding: 16px;
+                margin-bottom: 16px;
+                background-color: #ffffff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                font-family: sans-serif;
+            ">
+                <h3 style="margin-top: 0; margin-bottom: 14px; color: #333; font-size: 1.15rem;">{titulo_tarjeta}</h3>
+                
+                <!-- Fila Principal (3 Columnas) -->
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px; gap: 10px;">
+                    <div style="flex: 1; min-width: 140px;">
+                        <span style="color: #666; font-size: 0.85rem; font-weight: bold;">CÓDIGO</span><br>
+                        <span style="font-size: 0.95rem; color: #111;">{fila['Material']}</span>
+                    </div>
+                    <div style="flex: 1; min-width: 140px;">
+                        <span style="color: #666; font-size: 0.85rem; font-weight: bold;">UBICACIÓN</span><br>
+                        <span style="font-size: 0.95rem; color: #111;">{fila['Ubicación']}</span>
+                    </div>
+                    <div style="flex: 1; min-width: 160px; text-align: center;">
+                        <span style="color: #666; font-size: 0.85rem; font-weight: bold;">STOCK DISPONIBLE</span><br>
+                        <div style="
+                            background-color: {stock_bg};
+                            border-radius: 8px;
+                            padding: 6px 12px;
+                            display: inline-block;
+                            font-weight: bold;
+                            font-size: 1.2rem;
+                            color: {stock_color};
+                            margin-top: 4px;
+                            width: 80%;
+                        ">
+                            {fila['Libre utilización']} {fila['Unidad medida base']}
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
+                
+                <!-- Fila Parametrización (4 Columnas) -->
+                <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #444;">📋 Parametrización</h4>
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 0.85rem; color: #555;">
+                    <div style="flex: 1; min-width: 100px;">
+                        <strong>Planificación:</strong><br>{fila['Caract.planif.nec.']}
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <strong>Punto Pedido:</strong><br>{fila['Punto de pedido']}
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <strong>Stock Máximo:</strong><br>{fila['Stock máximo']}
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <strong>Parte Crítica:</strong><br>{critica_badge}
+                    </div>
+                </div>
+            </div>
+            """
+            html_buffer.append(card_html)
 
-                with col_c2:
-                    st.write("**Ubicación**")
-                    st.write(fila["Ubicación"])
+        # Renderizar todo el set de tarjetas de un solo golpe
+        st.markdown("\n".join(html_buffer), unsafe_allow_html=True)
 
-                with col_c3:
-                    st.write("**Stock Disponible**")
-                    if con_stock:
-                        st.markdown(
-                            f"""
-                            <div style="
-                                background-color:#e8f5e9;
-                                border-radius:10px;
-                                padding:10px;
-                                text-align:center;
-                                font-weight:bold;
-                                font-size:28px;
-                                color:#1b5e20;
-                            ">
-                                {fila['Libre utilización']} {fila['Unidad medida base']}
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.markdown(
-                            f"""
-                            <div style="
-                                background-color:#ffebee;
-                                border-radius:10px;
-                                padding:10px;
-                                text-align:center;
-                                font-weight:bold;
-                                font-size:28px;
-                                color:#c62828;
-                            ">
-                                {fila['Libre utilización']} {fila['Unidad medida base']}
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-                        
-                st.divider()
-                st.markdown("#### 📋 Parametrización")
-
-                col_c4, col_c5, col_c6, col_c7 = st.columns(4)
-                with col_c4:
-                    st.write("**Planificación**")
-                    st.write(fila["Caract.planif.nec."])
-
-                with col_c5:
-                    st.write("**Punto Pedido**")
-                    st.write(fila["Punto de pedido"])
-
-                with col_c6:
-                    st.write("**Stock Máximo**")
-                    st.write(fila["Stock máximo"])
-
-                with col_c7:
-                    st.write("**Parte Crítica**")
-                    if str(fila["Parte crítica"]).strip():
-                        st.success("SI")
-                    else:
-                        st.write("NO")
     else:
         st.warning("No se encontraron resultados exactos o similares.")
 else:
