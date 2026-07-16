@@ -1,645 +1,100 @@
 import streamlit as st
 import pandas as pd
 from rapidfuzz import process, fuzz
-import base64
 import unicodedata
 import re
 
+# =====================================================
+# CONFIGURACIÓN Y OPTIMIZACIÓN DE TEXTO
+# =====================================================
+st.set_page_config(page_title="Consulta Inventario", page_icon="⚙️", layout="centered")
+
 def normalizar_texto(texto):
-
     texto = str(texto).lower()
-
-    # Quitar tildes
-    texto = ''.join(
-        c for c in unicodedata.normalize('NFD', texto)
-        if unicodedata.category(c) != 'Mn'
-    )
-
-    # Normalización básica
-    texto = texto.replace("v", "b")
-    texto = texto.replace("-", "")
-    # Mantener medidas completas
-    # Mantener cualquier fracción de tornillería
-    texto = re.sub(
-        r'(\d+)/(\d+)',
-        r'\1_\2',
-    texto
-    )
-    texto = texto.replace("/", " ")
-    texto = texto.replace("cab/hex", "cab hex")
-
+    texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
+    texto = texto.replace("v", "b").replace("-", "")
+    texto = re.sub(r'(\d+)/(\d+)', r'\1_\2', texto)
+    texto = texto.replace("/", " ").replace("cab/hex", "cab hex")
     texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
+    return " ".join(texto.split())
 
-    texto = " ".join(texto.split())
-
-    # =====================================================
-    # SINÓNIMOS Y ABREVIATURAS
-    # =====================================================
-
-    # Sensores
-    if "inductivo" in texto:
-        texto += " induct"
-
-    if "induct" in texto:
-        texto += " inductivo"
-
-    # Tornillería
-    if "cab hex" in texto:
-        texto += " hexagonal"
-
-    if "hexagonal" in texto:
-        texto += " cab hex hex"
-
-    # Rodamientos
-    if "rodamiento" in texto:
-        texto += " rod"
-
-    if "rod" in texto:
-        texto += " rodamiento"
-
-    # Válvulas
-    if "valvula" in texto:
-        texto += " valv"
-
-    if "valv" in texto:
-        texto += " valvula"
-
-    # Pinturas
-    if "esmalte" in texto:
-        texto += " pintura pintulux"
-
-    if "pintura" in texto:
-        texto += " esmalte"
-
-    # Bristol / BCC
-    if "bcc" in texto:
-        texto += " bristol"
-
-    if "bristol" in texto:
-        texto += " bcc"
-
-    return texto
-    
-# =====================================================
-# CONFIGURACIÓN GENERAL
-# =====================================================
-st.set_page_config(
-    page_title="Consulta Inventario Repuestos",
-    page_icon="⚙️",
-    layout="centered"
-)
-
-# =====================================================
-# ESTILOS (AJUSTADOS PARA CERCANÍA Y COLOR NEGRO)
-# =====================================================
-st.markdown("""
-<style>
-.block-container {
-    max-width: 900px;
-    padding-top: 1.5rem; /* Reducido un poco el espacio superior total */
-}
-
-/* Contenedor del Logo con margen inferior reducido */
-.logo-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: -10px; /* Margen negativo para acercar el título */
-}
-
-.logo-img {
-    max-width: 240px;
-    width: 100%;
-    height: auto;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-}
-
-/* Título en NEGRO y más pegado arriba */
-.titulo {
-    text-align: center;
-    color: #000000; /* Color Negro */
-    font-size: 32px;
-    font-weight: 800;
-    margin-top: 0px;    /* Eliminado el margen superior */
-    margin-bottom: 5px;
-}
-
-.subtitulo {
-    text-align: center;
-    color: #666;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =====================================================
-# CARGA DE DATOS
-# =====================================================
 @st.cache_data
 def cargar_datos():
-    try:
-        df = pd.read_excel("mi inventario.xlsx")
-        df.columns = df.columns.astype(str).str.strip()
+    df = pd.read_excel("mi inventario.xlsx")
+    df.columns = df.columns.astype(str).str.strip()
+    
+    # Pre-procesamiento de columnas clave (Limpieza una sola vez)
+    for col in ["Material", "Texto breve de material", "Ubicación", "Unidad medida base", "Caract.planif.nec.", "Parte crítica"]:
+        df[col] = df[col].fillna("").astype(str).str.strip()
+    
+    # Limpieza numérica vectorizada
+    for col in ["Libre utilización", "Punto de pedido", "Stock máximo"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    
+    # Pre-computar columna de búsqueda
+    df["search_col"] = (df["Texto breve de material"] + " " + df["Material"]).apply(normalizar_texto)
+    return df
 
-        df["Material"] = df["Material"].fillna("").astype(str).str.strip()
-        df["Texto breve de material"] = df["Texto breve de material"].fillna("").astype(str).str.strip()
-        df["Ubicación"] = (
-            df["Ubicación"]
-            .fillna("No asignada")
-            .astype(str)
-            .str.strip()
-        )
-        
-        df["Unidad medida base"] = (
-            df["Unidad medida base"]
-            .fillna("UN")
-            .astype(str)
-            .str.strip()
-        )
-
-        df["Libre utilización"] = (
-            pd.to_numeric(df["Libre utilización"], errors="coerce")
-            .fillna(0)
-            .astype(int)
-        )
-
-        df["Caract.planif.nec."] = (
-            df["Caract.planif.nec."]
-            .fillna("")
-            .astype(str)
-             .str.strip()
-        )
-
-        df["Punto de pedido"] = (
-            pd.to_numeric(df["Punto de pedido"], errors="coerce")
-            .fillna(0)
-        )
-
-        df["Stock máximo"] = (
-            pd.to_numeric(df["Stock máximo"], errors="coerce")
-            .fillna(0)   
-        )
-
-        df["Parte crítica"] = (
-            df["Parte crítica"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-        )
-
-
-        df["search_col"] = (
-            df["Texto breve de material"]
-            .fillna("")
-            .apply(normalizar_texto)
-            + " "
-            + df["Material"]
-            .fillna("")
-            .astype(str)
-            .apply(normalizar_texto)
-        )
-        
-        return df
-    except Exception as e:
-        st.error(f"Error cargando Excel: {e}")
-        return None
-        
 df = cargar_datos()
-if df is None:
-    st.stop()
-    
-# =====================================================
-# LOGO
-# =====================================================
-try:
-    with open("logo.png", "rb") as image_file:
-        encoded_logo = base64.b64encode(image_file.read()).decode()
-    
-    st.markdown(
-        f"""
-        <div class="logo-container">
-            <img class="logo-img" src="data:image/png;base64,{encoded_logo}" alt="Logo Eternit">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-except Exception as e:
-    st.error(f"No se pudo cargar el logo: {e}")
-        
-# =====================================================
-# TÍTULOS (AHORA MÁS PEGADOS Y EN NEGRO)
-# =====================================================
-st.markdown("<div class='titulo'>El repuesto que necesitas está a un clic. ¡Consulta el inventario! 📦</div>", unsafe_allow_html=True)
-
-st.divider()
 
 # =====================================================
-# FILTRO
+# INTERFAZ (UI)
 # =====================================================
+st.markdown("<h1 style='text-align: center;'>Consulta de Inventario 📦</h1>", unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([4,1,2])
-
+col1, col2, col3 = st.columns([4, 1, 2])
 with col1:
-    consulta = st.text_input(
-        "🔍 Buscar descripción",
-        placeholder="Ej: Rodamiento 6205"
-    ).strip()
-
+    consulta = st.text_input("🔍 Buscar descripción", placeholder="Ej: Rodamiento 6205").strip()
 with col2:
-
-    letras = sorted(
-        df["Ubicación"]
-        .astype(str)
-        .str[0]
-        .dropna()
-        .unique()
-    )
-
-    filtro_ubicacion = st.selectbox(
-        "📍 Ubicación",
-        ["Todas"] + letras
-    )
-
+    letras = sorted(df["Ubicación"].str[0].dropna().unique().tolist())
+    filtro_ubicacion = st.selectbox("📍 Ubicación", ["Todas"] + letras)
 with col3:
-
-    orden = st.selectbox(
-        "↕ Orden",
-        [
-            "Relevancia",
-            "Ubicación (Menor a Mayor)",
-            "Descripción (A-Z)"
-        ]
-    )
+    orden = st.selectbox("↕ Orden", ["Relevancia", "Ubicación (A-Z)", "Descripción (A-Z)"])
 
 # =====================================================
-# BÚSQUEDA Y RESULTADOS (MEJORADA)
+# LÓGICA DE BÚSQUEDA VECTORIZADA
 # =====================================================
 if consulta or filtro_ubicacion != "Todas":
-
-     # Filtrar primero por ubicación
+    # 1. Filtrado inicial
     df_busqueda = df.copy()
-
     if filtro_ubicacion != "Todas":
-        df_busqueda = df_busqueda[
-            df_busqueda["Ubicación"]
-            .astype(str)
-            .str.startswith(filtro_ubicacion)
-        ]
+        df_busqueda = df_busqueda[df_busqueda["Ubicación"].str.startswith(filtro_ubicacion)]
 
-    consulta_lower = normalizar_texto(consulta)
+    if consulta:
+        consulta_norm = normalizar_texto(consulta)
+        palabras = consulta_norm.split()
+        
+        # Filtro por coincidencia de todas las palabras (Vectorizado)
+        mask = df_busqueda["search_col"].apply(lambda x: all(p in x for p in palabras))
+        resultados = df_busqueda[mask].copy()
 
-    consulta_normalizada = (
-        consulta_lower
-        .replace("-", " ")
-        .replace("/", " ")
-    )
-
-    palabras = consulta_normalizada.split()
-
-    # -------------------------------------------------
-    # SI ES NUMÉRICO
-    # -------------------------------------------------
-    if consulta_lower.isdigit():
-
-        resultados = df_busqueda[
-        (
-            df_busqueda["Material"]
-                .astype(str)
-                .str.contains(
-                    consulta_lower,
-                    na=False
-                )
-            )
-            |
-        (
-            df_busqueda["Texto breve de material"]
-                .astype(str)
-                .str.contains(
-                    consulta_lower,
-                    case=False,
-                    na=False
-                )
-            )
-        ].copy()
-
-        resultados["score"] = resultados[
-            "Texto breve de material"
-        ].astype(str).str.lower().apply(
-            lambda x: 100 if consulta_lower in x else 0
-        )
-
-    # -------------------------------------------------
-    # SI ES TEXTO
-    # -------------------------------------------------
-    else:
-
-        def contar_coincidencias(texto):
-
-            texto = (
-                str(texto)
-                .lower()
-                .replace("-", " ")
-                .replace("/", " ")
-            )
-
-            return sum(
-                palabra in texto
-                for palabra in palabras
-            )
-
-        coincidencias_exactas = df_busqueda[
-            df_busqueda["search_col"].apply(
-                lambda x: all(
-                    palabra in x
-                    for palabra in palabras
-                )
-            )
-        ].copy()
-
-        if not coincidencias_exactas.empty:
-
-            resultados = coincidencias_exactas.copy()
-
-            resultados["score"] = resultados[
-                "Texto breve de material"
-            ].apply(contar_coincidencias)
-
+        # Si no hay resultados exactos, usar fuzzy (solo sobre los que ya pasaron el filtro de ubicación)
+        if resultados.empty:
+            match = process.extract(consulta_norm, df_busqueda["search_col"].tolist(), scorer=fuzz.WRatio, limit=20)
+            indices = [m[2] for m in match if m[1] >= 55]
+            resultados = df_busqueda.iloc[indices].copy()
+            resultados["score"] = [m[1] for m in match if m[1] >= 55]
         else:
+            resultados["score"] = 100
 
-            resultados_data = process.extract(
-                consulta_lower,
-                df_busqueda["search_col"].tolist(),
-                scorer=fuzz.WRatio,
-                limit=40
-            )
+        # Ordenamiento
+        if orden == "Descripción (A-Z)":
+            resultados = resultados.sort_values("Texto breve de material")
+        else:
+            resultados = resultados.sort_values(["score", "Libre utilización"], ascending=False)
 
-            indices_validos = []
-            scores = {}
-
-            for texto_encontrado, score, indice_original in resultados_data:
-
-                if score >= 55:
-
-                    idx = df_busqueda.index[indice_original]
-
-                    indices_validos.append(idx)
-
-                    scores[idx] = score
-
-            resultados = df_busqueda.loc[indices_validos].copy()
-
-            resultados["score"] = resultados.index.map(scores)
-
-    # -------------------------------------------------
-    # ORDENAMIENTO
-    # -------------------------------------------------
-   
-    if not resultados.empty:
-
-        tiene_ubicacion = (
-            resultados["Ubicación"] != "No asignada"
-        ).astype(int)
-
-        tiene_stock = (
-            resultados["Libre utilización"] > 0
-        ).astype(int)
-
-        resultados["prioridad_dispo"] = (
-            tiene_ubicacion + tiene_stock
-        )
-
-        resultados["exacto"] = (
-            resultados["search_col"]
-            .apply(
-                lambda x:
-                all(
-                    palabra in x.replace("-", " ")
-                    for palabra in palabras
-                )
-            )
-        ).astype(int)
-
-        # Coincidencia exacta de medidas
-        medidas_busqueda = [
-            p for p in palabras
-            if "_" in p or p.isdigit()
-        ]
-
-        resultados["coincidencia_medida_exacta"] = resultados["search_col"].apply(
-            lambda x: sum(
-                medida in x.split()
-                for medida in medidas_busqueda
-            )
-        )
-
-        # Prioridad por coincidencia de palabras/medidas
-        resultados["prioridad_medida"] = resultados["search_col"].apply(
-            lambda x: sum(
-                20 if "_" in palabra else
-                5 if palabra.isdigit() else
-                1
-                for palabra in palabras
-                if palabra in x.split()
-            )
-        )
-
-        resultados = resultados.sort_values(
-            by=[
-                "exacto",
-                "coincidencia_medida_exacta",
-                "prioridad_medida",
-                "score",
-                "prioridad_dispo",
-                "Libre utilización"
-            ],
-            ascending=[
-                False,
-                False,
-                False,
-                False,
-                False,
-                False
-
-            ]
-        )
-
-        # ==========================================
-        # ORDEN PERSONALIZADO
-        # ==========================================
-
-        if orden == "Ubicación (Menor a Mayor)":
-
-            resultados["Letra"] = resultados["Ubicación"].str.extract(r"^([A-Za-z]+)")
+        # =====================================================
+        # RENDERIZADO (MOSTRAR RESULTADOS)
+        # =====================================================
+        st.caption(f"Se encontraron {len(resultados)} resultados.")
         
-            resultados["Numero"] = pd.to_numeric(
-                resultados["Ubicación"].str.extract(r"(\d+)")[0],
-                errors="coerce"
-            )
-        
-            resultados["Sufijo"] = resultados["Ubicación"].str.extract(r"\d+([A-Za-z]*)$")[0].fillna("")
-        
-            resultados = resultados.sort_values(
-                by=["Letra", "Numero", "Sufijo"],
-                ascending=[True, True, True]
-            )
-
-        elif orden == "Descripción (A-Z)":
-
-            resultados = resultados.sort_values(
-                by="Texto breve de material",
-                ascending=True
-            )
-
-        st.caption(
-            f"Se encontraron {len(resultados)} resultados para "
-            f"'{consulta}' (Ordenados por disponibilidad)"
-        )
-
         for _, fila in resultados.iterrows():
-
-            con_stock = (
-                fila["Libre utilización"] > 0
-            )
-
-            con_ubic = (
-                fila["Ubicación"] != "No asignada"
-            )
-
-            if not con_stock and not con_ubic:
-
-                titulo_tarjeta = (
-                    f"⚠️ {fila['Texto breve de material']} "
-                    f"(Código Sin Movimiento)"
-                )
-
-            elif not con_stock:
-
-                titulo_tarjeta = (
-                    f"🔴 {fila['Texto breve de material']} "
-                    f"(Sin Existencias)"
-                )
-
-            else:
-
-                titulo_tarjeta = (
-                    f"⚙️ {fila['Texto breve de material']}"
-                )
-
-            with st.container(border=True):
-
-                st.markdown(
-                    f"### {titulo_tarjeta}"
-                )
-
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-
-                    st.write("**Código**")
-                    st.write(fila["Material"])
-
-                with col2:
-
-                    st.write("**Ubicación**")
-                    st.write(fila["Ubicación"])
-
-                with col3:
-
-                    st.write("**Stock Disponible**")
-
-                    if fila["Libre utilización"] > 0:
-
-                        st.markdown(
-                            f"""
-                            <div style="
-                                background-color:#e8f5e9;
-                                border-radius:10px;
-                                padding:10px;
-                                text-align:center;
-                                font-weight:bold;
-                                font-size:28px;
-                                color:#1b5e20;
-                            ">
-                                {fila['Libre utilización']} {fila['Unidad medida base']}
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                    else:
-
-                        st.markdown(
-                            f"""
-                            <div style="
-                                background-color:#ffebee;
-                                border-radius:10px;
-                                padding:10px;
-                                text-align:center;
-                                font-weight:bold;
-                                font-size:28px;
-                                color:#c62828;
-                            ">
-                                {fila['Libre utilización']} {fila['Unidad medida base']}
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-                        
-                st.divider()
-
-                st.markdown(
-                    "#### 📋 Parametrización"
-                )
-
-                col4, col5, col6, col7 = st.columns(4)
-
-                with col4:
-
-                    st.write("**Planificación**")
-                    st.write(
-                        fila["Caract.planif.nec."]
-                    )
-
-                with col5:
-
-                    st.write("**Punto Pedido**")
-                    st.write(
-                        fila["Punto de pedido"]
-                    )
-
-                with col6:
-
-                    st.write("**Stock Máximo**")
-                    st.write(
-                        fila["Stock máximo"]
-                    )
-
-                with col7:
-
-                    st.write("**Parte Crítica**")
-
-                    if str(
-                        fila["Parte crítica"]
-                    ).strip():
-
-                        st.success("SI")
-
-                    else:
-
-                        st.write("NO")
-
+            color = "#e8f5e9" if fila["Libre utilización"] > 0 else "#ffebee"
+            st.info(f"**{fila['Texto breve de material']}**")
+            c1, c2, c3 = st.columns(3)
+            c1.write(f"**Código:** {fila['Material']}")
+            c2.write(f"**Ubicación:** {fila['Ubicación']}")
+            c3.markdown(f"<div style='background:{color}; text-align:center; padding:5px; border-radius:5px;'>{fila['Libre utilización']} {fila['Unidad medida base']}</div>", unsafe_allow_html=True)
+            st.divider()
     else:
-
-        st.warning(
-            "No se encontraron resultados "
-            "exactos o similares."
-        )
-
-else:
-
-    st.info(
-        "Ingrese un código o descripción "
-        "para buscar."
-    )
+        st.write(df_busqueda)
