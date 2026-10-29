@@ -6,6 +6,27 @@ import unicodedata
 import re
 
 # =====================================================
+# CONFIGURACIÓN GENERAL DE LA PÁGINA
+# =====================================================
+st.set_page_config(
+    page_title="Consulta Inventario Repuestos",
+    page_icon="⚙️",
+    layout="centered"
+)
+
+# =====================================================
+# CÓDIGO PARA OCULTAR LA BARRA SUPERIOR Y GITHUB
+# =====================================================
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# =====================================================
 # FUNCIÓN DE NORMALIZACIÓN
 # =====================================================
 def normalizar_texto(texto):
